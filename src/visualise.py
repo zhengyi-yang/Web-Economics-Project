@@ -20,12 +20,12 @@ def get_results_for_budget_limit(const_price, rand_upper, budget):
 
         mtc = metrics(result_const)
         mtr = metrics(result_rand)
-        yc_metrics.append([mtc.impressions, mtc.clicks, mtc.cost,
-                           mtc.CTR, mtc.CPM])
-        yr_metrics.append([mtr.impressions, mtr.clicks, mtr.cost,
-                           mtr.CTR, mtr.CPM])
+        yc_metrics.append([bl, mtc.impressions, mtc.clicks, mtc.cost,
+                           mtc.CTR, mtc.CPM, mtc.CPC])
+        yr_metrics.append([bl, mtr.impressions, mtr.clicks, mtr.cost,
+                           mtr.CTR, mtr.CPM, mtr.CPC])
 
-    headers = ['Imps', 'Clicks', 'Cost', 'CTR', 'CPM']
+    headers = ['Budget Limit', 'Imps', 'Clicks', 'Cost', 'CTR', 'CPM']
     with open('../output/constant_bidding_budget_limit.txt', 'w+') as fd:
         fd.write(''.join(tabulate(yc_metrics, headers=headers,
                                   tablefmt='latex')))
