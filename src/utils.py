@@ -31,7 +31,7 @@ class metrics(object):
         self.CPM = df.bidprice.mean()
 
         if self.clicks == 0:
-            self.CPC = 0.
+            self.CPC = float('NaN')
         else:
             self.CPC = self.cost / self.clicks
 

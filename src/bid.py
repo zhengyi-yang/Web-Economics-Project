@@ -5,28 +5,32 @@ Created on Mon Mar 06 16:04:27 2017
 @author: Zhengyi
 """
 
-import pandas as pd
 from random import randint
 
 
 def const_bid(df, price, budget):
     result = df[price > df.payprice]
-    return result[:budget * 1000 // price]
+    result = result[:budget * 1000 // price].copy()
+    result.bidprice = price
+    return result
 
 
 def rand_bid(df, upper, budget):
     spend = 0
     budget *= 1000
-    result = pd.DataFrame(columns=df.columns)
-    result = []
+    win = []
+    bidprices = []
     for idx, payprice in enumerate(df.payprice):
-        bid_price = randint(0, upper)
-        if bid_price > payprice:
-            spend += bid_price
+        bidprice = randint(0, upper)
+        if bidprice > payprice:
+            spend += bidprice
             if spend > budget:
                 break
-            result.append(idx)
-    return df.iloc[result]
+            bidprices.append(bidprice)
+            win.append(idx)
+    results = df.iloc[win].copy()
+    results.bidprice = bidprices
+    return results
 
 
 if __name__ == '__main__':
@@ -41,13 +45,13 @@ if __name__ == '__main__':
 
     if not os.path.exists(out):
         os.mkdir(out)
-        
+
     const_results = defaultdict(dict)
     rand_results = defaultdict(dict)
     for advertiser_id, df in dataloader(data).group():
         print advertiser_id
-        const_result=const_results[str(advertiser_id)]
-        rand_result=rand_results[str(advertiser_id)]
+        const_result = const_results[str(advertiser_id)]
+        rand_result = rand_results[str(advertiser_id)]
         for x in xs:
             const_result[x] = (metrics(const_bid(df, x, 25000)).to_dict())
             rand_result[x] = (metrics(rand_bid(df, x, 25000)).to_dict())
