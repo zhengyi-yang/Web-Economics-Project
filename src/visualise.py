@@ -7,9 +7,6 @@ from utils import dataloader, metrics
 
 def get_results_for_budget_limit(const_price, rand_upper, budget):
     """Get results for budget limit."""
-    result_const = const_bid(dl.df, const_price, budget)
-    result_rand = rand_bid(dl.df, rand_upper, budget)
-
     budget_limit = [budget // 2 ** i for i in range(0, 5)]
     yc_metrics = []
     yr_metrics = []
@@ -34,6 +31,11 @@ def get_results_for_budget_limit(const_price, rand_upper, budget):
         fd.write(''.join(tabulate(yr_metrics, headers=headers,
                          tablefmt='latex')))
 
+
+def get_results_for_advertisers(const_price, rand_upper, budget):
+    """Get results for different advertisers."""
+    result_const = const_bid(dl.df, const_price, budget)
+    result_rand = rand_bid(dl.df, rand_upper, budget)
 
 if __name__ == '__main__':
     dl = dataloader('../data/validation.csv')
