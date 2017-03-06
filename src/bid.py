@@ -18,8 +18,8 @@ def rand_bid(df, upper, budget):
     spend = 0
     budget *= 1000
     result = pd.DataFrame(columns=df.columns)
-    result=[]
-    for idx,payprice in enumerate(df.payprice):
+    result = []
+    for idx, payprice in enumerate(df.payprice):
         bid_price = randint(0, upper)
         if bid_price > payprice:
             spend += bid_price
@@ -27,3 +27,28 @@ def rand_bid(df, upper, budget):
                 break
             result.append(idx)
     return df.iloc[result]
+
+
+if __name__ == '__main__':
+    import os
+    import json
+    from utils import dataloader, metrics
+
+    data = os.path.join('..', 'data','validation.csv')
+    out = os.path.join('..', 'out')
+    xs = range(1, 250)
+
+    if not os.path.exists(out):
+        os.mkdir(out)
+
+    for advertiser_id, df in dataloader(data).group():
+        const_results = {}
+        rand_results = {}
+        for x in xs:
+            const_results[x] = (metrics(const_bid(df, x, 25000)).to_dict())
+            rand_results[x] = (metrics(rand_bid(df, x, 25000)).to_dict())
+    
+    with open(os.path.join(out,'const_bid.json'),'w') as f:
+        json.dump(const_results,f)
+    with open(os.path.join(out,'rand_bid.json'),'w') as f:
+        json.dump(rand_results,f)

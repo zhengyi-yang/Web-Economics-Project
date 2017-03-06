@@ -35,14 +35,7 @@ class metrics(object):
         else:
             self.CPC = self.cost / self.clicks
 
-    def __str__(self):
-        return '''
-        impressions:%d
-        clicks:%d
-        cost:%d
-        CTR:%f
-        CPM:%f
-        CPC:%f
-        ''' % (self.impressions, self.clicks,
-               self.cost, self.CTR,
-               self.CPM, self.CPC)
+    def to_dict(self):
+        return {'impressions': self.impressions,
+                'clicks': self.clicks, 'cost': self.cost,
+                'CTR': self.CTR, 'CPM': self.CPM, 'CPC': self.CPC}
