@@ -18,11 +18,12 @@ def rand_bid(df, upper, budget):
     spend = 0
     budget *= 1000
     result = pd.DataFrame(columns=df.columns)
-    for index, row in df.iterrows():
+    result=[]
+    for idx,payprice in enumerate(df.payprice):
         bid_price = randint(0, upper)
-        if bid_price > row['payprice']:
+        if bid_price > payprice:
             spend += bid_price
             if spend > budget:
                 break
-            result.loc[len(result)] = row
-    return result
+            result.append(idx)
+    return df.iloc[result]

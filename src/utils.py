@@ -17,7 +17,7 @@ class dataloader(object):
 
     def group(self):
         for advertiser_id in set(self.df.advertiser):
-            yield self.df[self.df.advertiser == advertiser_id]
+            yield advertiser_id, self.df[self.df.advertiser == advertiser_id]
 
 
 class metrics(object):
