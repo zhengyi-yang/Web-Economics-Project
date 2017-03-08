@@ -7,6 +7,10 @@ Created on Mon Mar 06 16:04:27 2017
 
 from random import randint
 
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+
+from utils import metrics
 
 def const_bid(df, price, budget):
     result = df[price > df.payprice]
@@ -33,10 +37,40 @@ def rand_bid(df, upper, budget):
     return results
 
 
+def logistic_bidprice(train,test,base_price):
+    X_train,y_train=to_value(train)
+    logreg=LogisticRegression()
+    logreg.fit(X_train,y_train)
+    
+    CTR=metrics(train).CTR
+    
+    X_test=test._get_numeric_data().values
+    pCTR=logreg.predict_proba(X_test)
+    bidprice=base_price*pCTR/CTR
+    return bidprice
+
+
+def to_value(df):
+    y=df.click.values
+    X=df.drop(['click','bidprice','payprice'],axis=1)._get_numeric_data().values
+    return X,y
+
+
+#def to_num(df):
+#    non_numeric={name for name,dtype in df.dtypes.iteritems() if not issubclass(np.dtype(dtype).type, np.number)}
+#    dictionary={}
+#    for col in non_numeric:
+#        keys=set(df[col])
+#        dictionary[col]=dict(zip(keys,range(1,len(keys)+1)))
+#        df[col]=df[col].map(dictionary[col])
+#    return df,dictionary
+
+
+
 if __name__ == '__main__':
     import os
     import json
-    from utils import dataloader, metrics
+    from utils import dataloader
     from collections import defaultdict
 
     data = os.path.join('..', 'data', 'validation.csv')
