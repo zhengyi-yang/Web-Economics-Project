@@ -32,6 +32,10 @@ def rand_bid(df, upper, budget):
     results.bidprice = bidprices
     return results
 
+def linear_bid(df, budget):
+    """Linear bidding strategy."""
+    pass
+
 
 if __name__ == '__main__':
     import os
