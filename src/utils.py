@@ -12,7 +12,10 @@ class dataloader(object):
 
     def __init__(self, path):
         df = pd.read_csv(path)
-        df = df[df.bidprice > df.payprice]
+        try:
+            df = df[df.bidprice > df.payprice]
+        except Exception:
+            pass
         self.df = df
 
     def group(self):
