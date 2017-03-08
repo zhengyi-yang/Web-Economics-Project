@@ -1,4 +1,3 @@
-
 import json
 import re
 import os
@@ -19,6 +18,7 @@ def produce_table(file_name, vis):
     for adv in results.keys():
         row = [adv, 0, 0, 0, 0, 0]
         vals = results[adv]
+        # take an average of the values
         for v in vals.values():
             row[1] += v['impressions']
             row[2] += v['clicks']
@@ -27,6 +27,15 @@ def produce_table(file_name, vis):
                 row[4] += v['CTR']
             if not np.isnan(v['CPM']):
                 row[5] += v['CPM']
+
+        size_vals = len(vals.values())
+
+        for i in range(1, 3):
+            row[i] //= size_vals
+
+        for i in range(3, 6):
+            row[i] /= size_vals
+
         results_table.append(row)
 
     headers = ['Adv', 'Imps', 'Clicks', 'Cost', 'CTR', 'CPM']
@@ -85,17 +94,33 @@ def error(predicted, expected):
             if j == 0:
                 error[i][j] = expected[i][j]
             else:
-                error[i][j] = (predicted[i][j] - expected[i][j]) / expected[i][j]
+                error[i][j] = abs(predicted[i][j] - expected[i][j]) / expected[i][j]
 
     return error
 
 
-def plot_errorbars():
-    pass
+# def plot_errorbars(results):
+#     """Produce graphs for the results."""
+#     charts = os.path.join('..', 'vis', 'charts')
+
+#     if not os.path.exists(charts):
+#         os.mkdir(charts)
+
+#     fig, ax = plt.subplots()
+#     budgets = [10000, 20000, 25000]
+#     ax.plot(budgets, results[:3], 'ro-')
+#     ax.plot(budgets, results[3:], 'go-')
+#     plt.ylabel('CTR')
+#     plt.xlabel('Budget')
+#     plt.title('')
+#     plt.show()
+
 
 if __name__ == '__main__':
     path_to_valset = '../data/validation.csv'
     expected_vals = get_expected_values(path_to_valset)
+
+    # fist number - bid price
 
     # this is where all plots and tables will go
     vis = os.path.join('..', 'vis')
@@ -106,7 +131,13 @@ if __name__ == '__main__':
     path = '../out'
     out_files = ['const_bid_10000.json', 'const_bid_20000.json', 'const_bid_25000.json',
                  'rand_bid_10000.json', 'rand_bid_20000.json', 'rand_bid_25000.json']
+    ctr_values = []
 
     for out_file in out_files:
         results_table = produce_table(out_file, vis)
         produce_error_table(results_table, expected_vals, out_file)
+        ctr_values.append(results_table[6][4])
+
+    # plot the error bars for 2261
+    # (the advertiser with the smallest error
+    # plot_errorbars(ctr_values)
