@@ -36,6 +36,10 @@ def rand_bid(df, upper, budget):
     results.bidprice = bidprices
     return results
 
+def linear_bid(df, budget):
+    """Linear bidding strategy."""
+    pass
+
 
 def logistic_bidprice(train,test,base_price):
     X_train,y_train=to_value(train)

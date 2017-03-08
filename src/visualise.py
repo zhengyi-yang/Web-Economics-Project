@@ -38,7 +38,8 @@ def produce_table(file_name, vis):
 
     with open('%s/%s' % (tables, name), 'w+') as fd:
         fd.write(''.join(tabulate(results_table, headers=headers,
-                                  tablefmt='latex')))
+                                  # tablefmt='latex'
+                                  )))
     return results_table
 
 
@@ -53,7 +54,8 @@ def produce_error_table(results_table, expected_vals, out_file):
         fd.write(''.join(tabulate(err,
                                   headers=['Adv', 'Imps', 'Clicks',
                                            'Cost', 'CTR', 'CPM'],
-                                  tablefmt='latex')))
+                                  # tablefmt='latex'
+                                  )))
 
 
 def get_expected_values(path_to_valset):
@@ -87,6 +89,9 @@ def error(predicted, expected):
 
     return error
 
+
+def plot_errorbars():
+    pass
 
 if __name__ == '__main__':
     path_to_valset = '../data/validation.csv'
