@@ -94,7 +94,8 @@ def error(predicted, expected):
             if j == 0:
                 error[i][j] = expected[i][j]
             else:
-                error[i][j] = abs(predicted[i][j] - expected[i][j]) / expected[i][j]
+                error[i][j] = abs(predicted[i][j] -
+                                  expected[i][j]) / expected[i][j]
 
     return error
 
