@@ -28,8 +28,8 @@ def mcpc_strategy_lin(path_to_training, path_to_test):
 
     for i, row in enumerate(test_set.df.values):
         max_ecpc = max_by_adv[row[-2]]
-        pred_ctr = pctr[i][0]
-        bid_price_col[i] = max_ecpc * pred_ctr
+        pred_ctr = pctr[i][1]
+        bid_price_col[i] = round(max_ecpc * pred_ctr * 1000, 0)
 
     res = test_set.df
     res['bidprice'] = pd.DataFrame(bid_price_col, columns=['bidprice'])
