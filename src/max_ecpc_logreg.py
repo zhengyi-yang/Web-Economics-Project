@@ -1,18 +1,14 @@
 """@author: NAAK254."""
 
 from sklearn.linear_model import LogisticRegression
-from utils import dataloader, metrics
+from utils import dataloader
 import pandas as pd
 import numpy as np
 
-""" Bidding below max eCPC (Mcpc). The goal of bid
-    optimisation is to reduce the eCPC. In [12], given the ad-
-    vertiser's goal on max eCPC, which is the upper bound of
-    expected cost per click, the bid price on an impression is ob-
-    tained by multiplying the max eCPC and the pCTR. Here
-    we calculate the max eCPC for each campaign by dividing
-    its cost and achieved number of clicks in the training data.
-    No parameter for this bidding strategy. - Zhang et al, 2015
+""" Bidding below max eCPC (Mcpc). The goal of bid optimisation is to reduce the eCPC. In [12], given the advertiser's goal on max eCPC, which is the
+    upper bound of expected cost per click, the bid price on an impression is obtained by multiplying the max eCPC and the pCTR. Here we calculate the
+    max eCPC for each campaign by dividing its cost and achieved number of clicks in the training data. No parameter for this bidding strategy.
+    - Zhang et al, 2015.
 """
 
 
@@ -25,18 +21,19 @@ def mcpc_strategy_lin(path_to_training, path_to_test):
     # get max eCPC for each advertiser
     max_by_adv = get_maxecpc(training_set.group())
 
-    # create a dataframe for the bidprice column
-    bid_price_col = pd.DataFrame(np.zeros(1, len_test_set),
-                                 columns=['bidprice'])
+    # create bidprice column for test set, this will be added to the dataframe
+    bid_price_col = np.zeros(len_test_set)
 
     pctr = get_predicted_ctr(test_set, training_set)
 
     for i, row in enumerate(test_set.df.values):
         max_ecpc = max_by_adv[row[-2]]
-        bid_price_col[i] = max_ecpc * pctr[i]
-        break
+        pred_ctr = pctr[i][0]
+        bid_price_col[i] = max_ecpc * pred_ctr
 
-    return test_set.append(bid_price_col)
+    bid_price_df = pd.DataFrame(bid_price_col, columns=['bidprice'])
+    test_set.df.add(bid_price_df)
+    return test_set
 
 
 def get_maxecpc(training):
@@ -74,3 +71,6 @@ if __name__ == '__main__':
     path_to_training = '../data/train.csv'
     path_to_test = '../data/test.csv'
     results = mcpc_strategy_lin(path_to_training, path_to_test)
+
+    with open('../out/mcpc_results.csv', 'w+') as res:
+        results.df.to_csv(res)
