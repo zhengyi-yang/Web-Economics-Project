@@ -31,9 +31,10 @@ def mcpc_strategy_lin(path_to_training, path_to_test):
         pred_ctr = pctr[i][0]
         bid_price_col[i] = max_ecpc * pred_ctr
 
-    bid_price_df = pd.DataFrame(bid_price_col, columns=['bidprice'])
-    test_set.df.add(bid_price_df)
-    return test_set
+    res = test_set.df
+    res['bidprice'] = pd.DataFrame(bid_price_col, columns=['bidprice'])
+
+    return res
 
 
 def get_maxecpc(training):
@@ -73,4 +74,4 @@ if __name__ == '__main__':
     results = mcpc_strategy_lin(path_to_training, path_to_test)
 
     with open('../out/mcpc_results.csv', 'w+') as res:
-        results.df.to_csv(res)
+        results.to_csv(res)
