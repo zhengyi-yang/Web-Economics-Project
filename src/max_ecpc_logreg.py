@@ -16,7 +16,7 @@ def mcpc_strategy_lin(path_to_training, path_to_test):
     """Bidding below max eCPC."""
     training_set = dataloader(path_to_training)
     test_set = dataloader(path_to_test)
-    len_test_set = test_set.df.size
+    len_test_set = len(test_set.df)
 
     # get max eCPC for each advertiser
     max_by_adv = get_maxecpc(training_set.group())
@@ -29,7 +29,7 @@ def mcpc_strategy_lin(path_to_training, path_to_test):
     for i, row in enumerate(test_set.df.values):
         max_ecpc = max_by_adv[row[-2]]
         pred_ctr = pctr[i][1]
-        bid_price_col[i] = round(max_ecpc * pred_ctr * 1000, 0)
+        bid_price_col[i] = int(round(max_ecpc * pred_ctr * 1000, 0))
 
     res = test_set.df
     res['bidprice'] = pd.DataFrame(bid_price_col, columns=['bidprice'])
