@@ -19,8 +19,8 @@ class dataloader(object):
             self._to_binary()
 
     def _to_binary(self):
-        # ['weekday', 'hour', 'userid', 'useragent','region', 'city', 'domain','slotvisibility']
-        cols = ['weekday','useragent']
+        cols = ['weekday', 'hour', 'userid', 'useragent', 'region',
+                'city', 'domain', 'slotvisibility']
         dummies = []
         for name in cols:
             dummy = pd.get_dummies(self.df[name], prefix=name)
@@ -43,7 +43,7 @@ class dataloader(object):
 
     def group(self):
         for advertiser_id in set(self.df.advertiser):
-            yield advertiser_id, self.df[self.df.advertiser == advertiser_id]
+            yield advertiser_id, self.df[self.df.advertiser == advertiser_id].drop(['advertiser'], axis=1)
 
 
 class metrics(object):

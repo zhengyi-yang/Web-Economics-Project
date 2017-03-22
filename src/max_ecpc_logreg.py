@@ -28,7 +28,7 @@ def mcpc_strategy_lin(path_to_training, path_to_test):
 
     for i, row in enumerate(test_set.df.values):
         max_ecpc = max_by_adv[row[-2]]
-        pred_ctr = pctr[i][1]
+        pred_ctr = pctr[i]
         bid_price_col[i] = int(round(max_ecpc * pred_ctr * 1000, 0))
 
     res = test_set.df
@@ -64,7 +64,7 @@ def get_predicted_ctr(test, train):
 
     test_x = test.df.drop([],
                           axis=1)._get_numeric_data().values
-    pctr = logreg.predict_proba(test_x)
+    pctr = logreg.predict_proba(test_x)[:, 1]
     return pctr
 
 
