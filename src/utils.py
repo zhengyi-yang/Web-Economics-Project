@@ -10,16 +10,16 @@ import pandas as pd
 
 class dataloader(object):
 
-    def __init__(self, path, binarify=False):
+    def __init__(self, path, to_binary=False):
         df = pd.read_csv(path)
         if 'bidprice' in df.columns and 'payprice' in df.columns:
             df = df[df.bidprice > df.payprice]
         self.df = df
-        if binarify:
+        if to_binary:
             self._to_binary()
 
     def _to_binary(self):
-        cols = ['weekday', 'hour', 'userid', 'useragent', 'region',
+        cols = ['userid', 'useragent', 'region',
                 'city', 'domain', 'slotvisibility']
         dummies = []
         for name in cols:
