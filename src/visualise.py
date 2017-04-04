@@ -5,6 +5,25 @@ import numpy as np
 from tabulate import tabulate
 from utils import dataloader, metrics
 import matplotlib.pyplot as plt
+import pandas as pd
+
+
+def to_csv(json_path):
+    if os.path.isfile(json_path):
+        json_paths = [json_path]
+    elif os.path.isdir(json_path):
+        json_paths = [os.path.join(json_path, filename)
+                      for filename in os.listdir(json_path)]
+
+    for json_path in json_paths:
+        path, ext = os.path.splitext(json_path)
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+        df = pd.DataFrame(data)
+        df = df.T
+        df.index = map(int, df.index)
+        df.sort_index(inplace=True)
+        df.to_csv(path + '.csv')
 
 
 def produce_table(file_name, vis):
