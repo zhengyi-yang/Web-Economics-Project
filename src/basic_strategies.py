@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     print 'start running...'
     for budget in budgets:
-        for x in tqdm(xs, desc='budget:%d' % budget):
+        for x in tqdm(xs, desc='budget-%d' % budget):
             const_results[x] = (utils.metrics(
                 const_bid(loader, x, budget)).to_dict())
             rand_results[x] = (utils.metrics(
