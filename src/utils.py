@@ -13,8 +13,8 @@ from scipy.sparse import csc_matrix
 def get_successful_bid(dataloader, bidprice, budget):
     df = dataloader.df[['click', 'bidprice', 'payprice']]
     df.bidprice = bidprice
-    df = df.loc[df.payprice < df.bidprice]
-    df['spend'] = df.bidprice.cumsum()
+    df = df[df.payprice < df.bidprice]
+    df.loc[:, 'spend'] = df.bidprice.cumsum()
 
     budget *= 1000
     df = df[df.spend <= budget]
