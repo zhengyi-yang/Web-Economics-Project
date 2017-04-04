@@ -2,4 +2,6 @@ pandas
 matplotlib
 tabulate
 numpy
+scipy
 scikit-learn
+tqdm

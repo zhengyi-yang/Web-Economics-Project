@@ -5,7 +5,21 @@ Created on Mon Mar 06 12:39:08 2017
 @author: Zhengyi
 """
 from __future__ import division
+
 import pandas as pd
+from scipy.sparse import csc_matrix
+
+
+def get_successful_bid(dataloader, bidprice, budget):
+    df = dataloader.df[['click', 'bidprice', 'payprice']]
+    df.bidprice = bidprice
+    df = df.loc[df.payprice < df.bidprice]
+    df['spend'] = df.bidprice.cumsum()
+
+    budget *= 1000
+    df = df[df.spend <= budget]
+
+    return df.drop(['spend'], axis=1)
 
 
 class dataloader(object):
@@ -15,12 +29,12 @@ class dataloader(object):
         if 'bidprice' in df.columns and 'payprice' in df.columns:
             df = df[df.bidprice > df.payprice]
         self.df = df
+        self.metrics = metrics(self.df)
         if to_binary:
             self._to_binary()
 
     def _to_binary(self):
-        cols = ['userid', 'useragent', 'region',
-                'city', 'domain', 'slotvisibility']
+        cols = ['useragent', 'region', 'advertiser', 'city', 'slotvisibility']
         dummies = []
         for name in cols:
             dummy = pd.get_dummies(self.df[name], prefix=name)
@@ -41,9 +55,21 @@ class dataloader(object):
 
         self.df = pd.concat([self.df] + dummies, axis=1)
 
-    def group(self):
-        for advertiser_id in set(self.df.advertiser):
-            yield advertiser_id, self.df[self.df.advertiser == advertiser_id].drop(['advertiser'], axis=1)
+    def to_value(self, sparse=False, classes=[0, 1]):
+        y = self.df.click.values
+        X = self.df.drop(['click', 'bidprice', 'payprice'],
+                         axis=1)._get_numeric_data().values
+
+        if sparse:
+            X = csc_matrix(X)
+        if classes != [0, 1]:
+            classes.sort()
+            y[y == 0] = classes[0]
+            y[y == 1] = classes[1]
+        return X, y
+
+    def __len__(self):
+        return len(self.df.index)
 
 
 class metrics(object):
