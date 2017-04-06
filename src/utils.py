@@ -5,9 +5,12 @@ Created on Mon Mar 06 12:39:08 2017
 @author: Zhengyi
 """
 from __future__ import division
+import os
 
 import pandas as pd
+import numpy as np
 from scipy.sparse import csc_matrix
+from sklearn.datasets import dump_svmlight_file
 
 
 def get_successful_bid(dataloader, bidprice, budget):
@@ -24,12 +27,17 @@ def get_successful_bid(dataloader, bidprice, budget):
 
 class dataloader(object):
 
-    def __init__(self, path, to_binary=False):
+    def __init__(self, path, to_binary=False, test=False):
         df = pd.read_csv(path)
-        if 'bidprice' in df.columns and 'payprice' in df.columns:
-            df = df[df.bidprice > df.payprice]
-        self.df = df
-        self.metrics = metrics(self.df)
+        self.test = test
+        self.path = os.path.abspath(path)
+
+        if not test:
+            self.df = df[df.bidprice > df.payprice]
+            self.metrics = metrics(self.df)
+        else:
+            self.df = df
+
         if to_binary:
             self._to_binary()
 
@@ -55,21 +63,34 @@ class dataloader(object):
 
         self.df = pd.concat([self.df] + dummies, axis=1)
 
-    def to_value(self, sparse=False, classes=[0, 1]):
-        y = self.df.click.values
-        X = self.df.drop(['click', 'bidprice', 'payprice'],
-                         axis=1)._get_numeric_data().values
+    def to_value(self, sparse=False, classes=None):
+        if not self.test:
+            y = self.df.click.values
+            X = self.df.drop(['click', 'bidprice', 'payprice'],
+                             axis=1)._get_numeric_data().values
+        else:
+            y = np.zeros(len(self))
+            X = self.df._get_numeric_data().values
 
         if sparse:
             X = csc_matrix(X)
-        if classes != [0, 1]:
-            classes.sort()
-            y[y == 0] = classes[0]
-            y[y == 1] = classes[1]
+        if classes is not None:
+            y[y == 0] = sorted(classes)[0]
+            y[y == 1] = sorted(classes)[1]
         return X, y
+
+    def dump_libfm(self, out_path, classes=None):
+        X, y = self.to_value(classes=classes)
+        dump_svmlight_file(X, y, out_path)
 
     def __len__(self):
         return len(self.df.index)
+
+    def __repr__(self):
+        return 'utils.dataloader at {}'.format(self.path)
+
+    def __str__(self):
+        return repr(self)
 
 
 class metrics(object):
