@@ -17,6 +17,8 @@ def to_csv(json_path):
 
     for json_path in json_paths:
         path, ext = os.path.splitext(json_path)
+        if ext != '.json':
+            continue
         with open(json_path, 'r') as f:
             data = json.load(f)
         df = pd.DataFrame(data)
