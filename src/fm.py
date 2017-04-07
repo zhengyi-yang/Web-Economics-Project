@@ -93,4 +93,4 @@ if __name__ == '__main__':
 
     out = '../out/pCTR_FM.txt'
 
-    fm_pCTR(*libfm_data_gen(train, validation, test), out_path=out)
+    fm_pCTR(*libfm_data_gen(train, validation, test, '../data/'), out_path=out)
