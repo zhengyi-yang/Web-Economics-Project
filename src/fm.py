@@ -11,6 +11,7 @@ from tempfile import mkdtemp
 from subprocess import Popen, PIPE
 
 import numpy as np
+from tqdm import tqdm
 
 import utils
 
@@ -18,20 +19,26 @@ LIBFM_PATH = os.path.abspath('../libfm')
 
 
 def libfm_data_gen(train_path, validation_path, test_path, out_dir):
-    print 'generating the training set...'
-    train = utils.dataloader(train_path, to_binary=True)
-    train_libfm_path = train_path + '.libfm'
-    train.dump_libfm(train_libfm_path)
+    print 'Generating libFM format data...'
+    with tqdm(total=6) as pbar:
 
-    print 'generating the validation set...'
-    validation = utils.dataloader(validation_path, to_binary=True)
-    validation_libfm_path = validation_path + '.libfm'
-    validation.dump_libfm(validation_libfm_path)
+        train = utils.dataloader(train_path, to_binary=True)
+        pbar.update(1)
+        train_libfm_path = train_path + '.libfm'
+        train.dump_libfm(train_libfm_path)
+        pbar.update(2)
 
-    print 'generating the test set...'
-    test = utils.dataloader(test_path, test=True, to_binary=True)
-    test_libfm_path = test_path + '.libfm'
-    test.dump_libfm(test_libfm_path)
+        validation = utils.dataloader(validation_path, to_binary=True)
+        pbar.update(3)
+        validation_libfm_path = validation_path + '.libfm'
+        validation.dump_libfm(validation_libfm_path)
+        pbar.update(4)
+
+        test = utils.dataloader(test_path, test=True, to_binary=True)
+        pbar.update(5)
+        test_libfm_path = test_path + '.libfm'
+        test.dump_libfm(test_libfm_path)
+        pbar.update(6)
 
     return train_libfm_path, validation_libfm_path, test_libfm_path
 
@@ -82,7 +89,7 @@ def _run_with_output(cmd):
         if out != '':
             sys.stdout.write(out)
             sys.stdout.flush()
-            
+
     return process.returncode
 
 
