@@ -50,7 +50,7 @@ def predict_bid_price(train, test, base_price, budget):
 if __name__ == '__main__':
     path_to_training = '../data/train.csv'
     path_to_test = '../data/test.csv'
-    results = gradientboost_stategy(path_to_training, path_to_test)
+    results = gradientboost_strategy(path_to_training, path_to_test)
 
     with open('../out/gbdt_results.csv', 'w+') as res:
         results.to_csv(res)
