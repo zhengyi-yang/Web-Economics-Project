@@ -70,9 +70,9 @@ Table 1: Fields in dataset
 
 # DEPENDENCIES
 
-```
-pip install -r requirements.txt
-```
+1. [libFM](http://www.libfm.org/) by Steffen Rendle
+
+2. Others python dependencies: `pip install -r requirements.txt`
 
 # REFERENCES
 
