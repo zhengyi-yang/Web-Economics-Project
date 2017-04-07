@@ -18,7 +18,7 @@ import utils
 LIBFM_PATH = os.path.abspath('../libfm')
 
 
-def libfm_data_gen(train_path, validation_path, test_path, out_dir):
+def libfm_data_gen(train_path, validation_path, test_path):
     print 'Generating libFM format data...'
     with tqdm(total=6) as pbar:
 
@@ -56,7 +56,7 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
     if sys.platform == 'win32':
         libfm += '.exe'
-        
+
     if not os.path.exists(libfm):
         raise RuntimeError(
             "libFM not found, run 'make' in {} first".format(LIBFM_PATH))
@@ -85,6 +85,26 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
     return pCTR
 
 
+def fm_strategy(train_path, validation_path, test_path, base_price, **kwargs):
+    train_libfm = train_path + '.libfm'
+    validation_libfm = validation_path + '.libfm'
+    test_libfm = test_path + '.libfm'
+
+    if not (os.path.exists(train_libfm) and
+            os.path.exists(validation_libfm) and
+            os.path.exists(test_libfm)):
+        train_libfm, validation_libfm, test_libfm = libfm_data_gen(
+            train_path, validation_path, test_path)
+
+    pCTR = fm_pCTR(train_libfm, validation_libfm, test_libfm, **kwargs)
+
+    CTR = utils.dataloader(train_path).metrics.CTR
+
+    bid_prices = base_price * pCTR / CTR
+
+    return bid_prices
+
+
 def _run_with_output(cmd):
 
     process = Popen(cmd, stdout=PIPE, shell=True)
@@ -107,4 +127,4 @@ if __name__ == '__main__':
 
     out = '../out/pCTR_FM.txt'
 
-    fm_pCTR(*libfm_data_gen(train, validation, test, '../data/'), out_path=out)
+    bid_prices = fm_strategy(train, validation, test, 200, out_path=out)
