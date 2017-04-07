@@ -6,8 +6,9 @@ Created on Mon Apr  3 18:26:13 2017
 @author: zhengyi
 """
 import os
+import sys
 from tempfile import mkdtemp
-from subprocess import call
+from subprocess import Popen, PIPE
 
 import numpy as np
 
@@ -60,7 +61,8 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
     print 'Running:\n {} \n'.format(cmd)
 
-    returncode = call(cmd, shell=True)
+    returncode = _run_with_output(cmd)
+
     if returncode != 0:
         raise RuntimeError('Error occured with libFM')
 
@@ -68,14 +70,27 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
     return pCTR
 
-if __name__=='__main__':
-    train='../data/train.csv'
-    validation='../data/validation.csv'
-    test='../data/test.csv'
-    
+
+def _run_with_output(cmd):
+
+    process = Popen(cmd, stdout=PIPE, shell=True)
+
+    while 1:
+        out = process.stdout.read(1)
+        if out == '' and process.poll() != None:
+            break
+        if out != '':
+            sys.stdout.write(out)
+            sys.stdout.flush()
+            
+    return process.returncode
+
+
+if __name__ == '__main__':
+    train = '../data/train.csv'
+    validation = '../data/validation.csv'
+    test = '../data/test.csv'
+
     out = '../out/pCTR_FM.txt'
-    
-    fm_pCTR(*libfm_data_gen(train,validation,test),out_path=out)
-    
-    
-    
+
+    fm_pCTR(*libfm_data_gen(train, validation, test), out_path=out)
