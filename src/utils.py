@@ -37,13 +37,14 @@ class dataloader(object):
             self.metrics = metrics(self.df)
         else:
             self.df = df
+            self.metrics = None
 
         if to_binary:
             self._to_binary()
 
     def _to_binary(self):
         cols = ('useragent', 'region', 'advertiser', 'city', 'slotvisibility',
-                'logtype','adexchange','slotformat')
+                'logtype', 'adexchange', 'slotformat')
         dummies = []
         for name in cols:
             dummy = pd.get_dummies(self.df[name], prefix=name)
