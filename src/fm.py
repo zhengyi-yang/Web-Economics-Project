@@ -27,18 +27,21 @@ def libfm_data_gen(train_path, validation_path, test_path, out_dir):
         train_libfm_path = train_path + '.libfm'
         train.dump_libfm(train_libfm_path)
         pbar.update(2)
+        del train
 
         validation = utils.dataloader(validation_path, to_binary=True)
         pbar.update(3)
         validation_libfm_path = validation_path + '.libfm'
         validation.dump_libfm(validation_libfm_path)
         pbar.update(4)
+        del validation
 
         test = utils.dataloader(test_path, test=True, to_binary=True)
         pbar.update(5)
         test_libfm_path = test_path + '.libfm'
         test.dump_libfm(test_libfm_path)
         pbar.update(6)
+        del test
 
     return train_libfm_path, validation_libfm_path, test_libfm_path
 
