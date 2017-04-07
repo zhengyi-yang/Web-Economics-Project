@@ -53,6 +53,10 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
     test = os.path.abspath(test_libfm_path)
 
     libfm = os.path.join(LIBFM_PATH, 'bin', 'libFM')
+
+    if sys.platform == 'win32':
+        libfm += '.exe'
+        
     if not os.path.exists(libfm):
         raise RuntimeError(
             "libFM not found, run 'make' in {} first".format(LIBFM_PATH))
