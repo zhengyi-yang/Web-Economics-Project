@@ -18,32 +18,57 @@ import utils
 LIBFM_PATH = os.path.abspath('../libfm')
 
 
-def libfm_data_gen(train_path, validation_path, test_path):
-    print 'Generating libFM format data...'
+def libfm_data_gen(train_path, validation_path, test_path,libffm=False):
+    print 'Generating libFM/libFFM format data...'
     with tqdm(total=6) as pbar:
 
         train = utils.dataloader(train_path, to_binary=True)
-        pbar.update(1)
+        pbar.update()
         train_libfm_path = train_path + '.libfm'
         train.dump_libfm(train_libfm_path)
-        pbar.update(2)
+        pbar.update()
+        if  libffm:
+            to_libffm_format(train_libfm_path,
+                             train.get_fields_dict())
         del train
 
         validation = utils.dataloader(validation_path, to_binary=True)
-        pbar.update(3)
+        pbar.update()
         validation_libfm_path = validation_path + '.libfm'
         validation.dump_libfm(validation_libfm_path)
-        pbar.update(4)
+        if  libffm:
+            to_libffm_format(validation_libfm_path,
+                             validation.get_fields_dict())
+        pbar.update()
         del validation
 
         test = utils.dataloader(test_path, test=True, to_binary=True)
-        pbar.update(5)
+        pbar.update()
         test_libfm_path = test_path + '.libfm'
         test.dump_libfm(test_libfm_path)
-        pbar.update(6)
+        if  libffm:
+            to_libffm_format(test_libfm_path,
+                             test.get_fields_dict())
+        pbar.update()
         del test
 
     return train_libfm_path, validation_libfm_path, test_libfm_path
+
+
+def to_libffm_format(libfm_data_path, fields_dict):
+    fields_dict_str = {str(k): str(v) for k, v in fields_dict.items()}
+
+    out = open(libfm_data_path + '.libffm', 'w')
+
+    def add_field_id(x): return fields_dict_str[(x.split(':')[0])] + ':' + x
+
+    with open(libfm_data_path, 'r') as f:
+        for line in f:
+            line = line.split(' ')
+            new_line = line[:1] + map(add_field_id, line[1:])
+            out.write(' '.join(new_line))
+#            out.flush()
+    out.close()
 
 
 def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
@@ -59,7 +84,7 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
     if not os.path.exists(libfm):
         raise RuntimeError(
-            "libFM not found, run 'make' in {} first".format(LIBFM_PATH))
+            "libFM can not be found at {} ".format(LIBFM_PATH))
 
     if out_path is None:
         temp_dir = mkdtemp()

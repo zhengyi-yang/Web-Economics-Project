@@ -64,20 +64,43 @@ class dataloader(object):
 
         self.df = pd.concat([self.df] + dummies, axis=1)
 
+    def _get_numeric_data(self):
+        if not self.test:
+            data = self.df.drop(['click', 'bidprice', 'payprice'],
+                                axis=1)._get_numeric_data()
+        else:
+            data = self.df._get_numeric_data()
+
+        return data
+
     def to_value(self):
+        X = self._get_numeric_data().values
+
         if not self.test:
             y = self.df.click.values
-            X = self.df.drop(['click', 'bidprice', 'payprice'],
-                             axis=1)._get_numeric_data().values
         else:
             y = np.zeros(len(self))
-            X = self.df._get_numeric_data().values
 
         return X, y
 
     def dump_libfm(self, out_path):
         X, y = self.to_value()
         dump_svmlight_file(X, y, out_path)
+
+    def get_fields_dict(self):
+        '''
+        return a dict of <index>:<field id>
+        '''
+        cols = self._get_numeric_data().columns
+        fields = {}  # <field name>:<field id>
+        fields_dict = {}  # <index>:<field id>
+
+        for i, col_name in enumerate(cols):
+            field = col_name.split('_')[0]
+            if field not in fields:
+                fields[field] = len(fields)
+            fields_dict[i] = fields[field]
+        return fields_dict
 
     def __len__(self):
         return len(self.df.index)
