@@ -9,7 +9,6 @@ import os
 
 import pandas as pd
 import numpy as np
-from scipy.sparse import csc_matrix
 from sklearn.datasets import dump_svmlight_file
 
 
@@ -65,7 +64,7 @@ class dataloader(object):
 
         self.df = pd.concat([self.df] + dummies, axis=1)
 
-    def to_value(self, sparse=False, classes=None):
+    def to_value(self):
         if not self.test:
             y = self.df.click.values
             X = self.df.drop(['click', 'bidprice', 'payprice'],
@@ -74,15 +73,10 @@ class dataloader(object):
             y = np.zeros(len(self))
             X = self.df._get_numeric_data().values
 
-        if sparse:
-            X = csc_matrix(X)
-        if classes is not None:
-            y[y == 0] = sorted(classes)[0]
-            y[y == 1] = sorted(classes)[1]
         return X, y
 
-    def dump_libfm(self, out_path, classes=None):
-        X, y = self.to_value(classes=classes)
+    def dump_libfm(self, out_path):
+        X, y = self.to_value()
         dump_svmlight_file(X, y, out_path)
 
     def __len__(self):
@@ -106,7 +100,7 @@ class metrics(object):
         self.CPM = df.bidprice.mean()
 
         if self.clicks == 0:
-            self.CPC = float('NaN')
+            self.CPC = np.nan
         else:
             self.CPC = self.cost / self.clicks
 
