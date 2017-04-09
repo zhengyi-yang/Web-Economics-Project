@@ -1,3 +1,7 @@
 [submodule "libfm"]
 	path = libfm
 	url = https://github.com/srendle/libfm.git
+
+[submodule "libffm"]
+	path = libffm
+	url = https://github.com/guestwalk/libffm.git
