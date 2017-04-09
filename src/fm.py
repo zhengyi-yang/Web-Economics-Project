@@ -17,6 +17,7 @@ from tqdm import tqdm
 import utils
 
 LIBFM_PATH = os.path.abspath('../libfm')
+LIBFFM_PATH = os.path.abspath('../libffm')
 
 
 def gen_libfm_data(train_path, validation_path, test_path, libffm=False):
@@ -79,7 +80,7 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
     libfm = os.path.join(LIBFM_PATH, 'bin', 'libFM')
 
-    if sys.platform == 'win32':
+    if _is_windows():
         libfm += '.exe'
 
     if not os.path.exists(libfm):
@@ -87,7 +88,7 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
             "libFM can not be found at {} ".format(LIBFM_PATH))
 
     if out_path is None:
-        out_path = mkstemp(suffix='.libfm')
+        out_path = mkstemp(suffix='.libfm')[1]
     else:
         out_path = os.path.abspath(out_path)
 
@@ -111,9 +112,93 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
     return pCTR
 
 
+def ffm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
+             out_path=None, **kwargs):
+
+    model = ffm_train(train_libfm_path, validation_libfm_path, **kwargs)
+
+    pCTR = ffm_pred(test_libfm_path, model, out_path=out_path)
+
+    return pCTR
+
+
+def ffm_train(train_libffm_path, validation_libffm_path,
+              reg=2e-5, factor=4, iteration=15, learn_rate=0.1, threads=1,
+              model_path=None):
+    train = os.path.abspath(train_libffm_path)
+    validation = os.path.abspath(validation_libffm_path)
+
+    if _is_windows():
+        libffm_train = os.path.join(LIBFFM_PATH, 'windows', 'ffm-train.exe')
+    else:
+        libffm_train = os.path.join(LIBFFM_PATH, 'ffm-train.exe')
+
+    if not os.path.exists(libffm_train):
+        raise RuntimeError(
+            "libFFM can not be found at {} ".format(LIBFM_PATH))
+
+    if model_path is None:
+        model_path = mkstemp(suffix='.model')[1]
+    else:
+        model_path = os.path.abspath(model_path)
+
+    cmd = "{libffm} -l {reg} -k {factor} -t {iteration} -r {learn_rate} " \
+          "-s {threads} -p {validation} --auto-stop {train} {model} "
+
+    cmd = cmd.format(libffm=libffm_train, reg=reg, factor=factor, iteration=iteration, learn_rate=learn_rate, threads=threads,
+                     validation=validation, train=train, model=model_path)
+
+    print 'Running:\n {} \n'.format(cmd)
+
+    returncode = _run_with_output(cmd)
+
+    if returncode != 0 or not os.path.exists(model_path):
+        raise RuntimeError('Error occured with libFM')
+
+    return model_path
+
+
+def ffm_pred(test_libffm_path, model_path, out_path=None):
+    test = os.path.abspath(test_libffm_path)
+
+    if _is_windows():
+        libffm_pred = os.path.join(LIBFFM_PATH, 'windows', 'ffm-predict.exe')
+    else:
+        libffm_pred = os.path.join(LIBFFM_PATH, 'ffm-predict.exe')
+
+    if not os.path.exists(libffm_pred):
+        raise RuntimeError(
+            "libFFM can not be found at {} ".format(LIBFM_PATH))
+
+    if out_path is None:
+        out_path = mkstemp(suffix='.libffm')[1]
+    else:
+        out_path = os.path.abspath(out_path)
+
+    cmd = "{libffm} {test} {model} {out}"
+
+    cmd = cmd.format(libffm=libffm_pred, test=test,
+                     model=model_path, out=out_path)
+
+    print 'Running:\n {} \n'.format(cmd)
+
+    returncode = _run_with_output(cmd)
+
+    if returncode != 0 or not os.path.exists(out_path):
+        raise RuntimeError('Error occured with libFM')
+
+    pCTR = np.loadtxt(out_path)
+
+    return pCTR
+
+
 def get_log_loss(path, pCTR):
     y = utils.dataloader(path).to_value()[1]
     return log_loss(y_true=y, y_pred=pCTR)
+
+
+def _is_windows():
+    return sys.platform == 'win32'
 
 
 def _run_with_output(cmd):
@@ -159,6 +244,10 @@ if __name__ == '__main__':
     train_libfm = '../data/train.csv.libfm'
     validation_libfm = '../data/validation.csv.libfm'
     test_libfm = '../data/test.csv.libfm'
+
+    train_libffm = '../data/train.csv.libfm.libffm'
+    validation_libffm = '../data/validation.csv.libfm.libffm'
+    test_libffm = '../data/test.csv.libfm.libffm'
 
     out = '../out/pCTR_FM.txt'
 
