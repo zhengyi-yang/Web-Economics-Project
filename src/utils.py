@@ -19,35 +19,43 @@ cols = ('useragent', 'region', 'advertiser', 'city', 'slotvisibility',
         'adexchange', 'slotformat', 'usertag')
 
 
-def gen_data(train_path, validation_path, test_path):
+def gen_feature_data(train_path, validation_path, test_path):
 
     attrs = _get_all_attrs(train_path, validation_path, test_path)
 
-    expand_feartures(dataloader(train_path).df,
-    attrs).to_csv(train_path + '.data')
-        expand_feartures(dataloader(validation_path).df,
-                     attrs).to_csv(train_path + '.data')
-    expand_feartures(dataloader(test_path, test=True).df,
-                     attrs).to_csv(train_path + '.data')
+    expand_features(dataloader(train_path).df,
+                    attrs).to_csv(train_path + '.data', index=False)
+    expand_features(dataloader(validation_path).df,
+                    attrs).to_csv(validation_path + '.data', index=False)
+    expand_features(dataloader(test_path, test=True).df,
+                    attrs).to_csv(test_path + '.data', index=False)
 
 
-def expand_feartures(df, attrs_dict):
+def expand_features(df, attrs_dict):
     dummies = []
-    
-    with tqdm(total=len(df.index)*len(cols)) as bar:
+    df_len = len(df.index)
+
+    with tqdm(total=df_len * len(cols)) as bar:
         for col in cols:
             dummy = pd.DataFrame(0, index=df.index, columns=attrs_dict[col])
-            for idx, value in df[col].iteritems():
-                if col != 'usertag':
-                    dummy.loc[idx, value] = 1
-                else:
+            if col != 'usertag':
+                temp = pd.get_dummies(df[col])
+                col_len = len(dummy.columns)
+                for column_name in dummy.columns:
+                    if column_name in temp.columns:
+                        dummy[column_name] = temp[column_name]
+                    bar.update(df_len / col_len)
+                del temp
+            else:
+                for idx, value in df['usertag'].iteritems():
                     if value != 'null':
                         for tag in value.split(','):
-                            dummy.loc[idx, tag] = 1
-                bar.update()
-        dummy.columns = [col + '_' + str(col) for col in dummy.columns]
-        dummies.append(dummy)
-        del df[col]
+                            dummy.loc[idx, tag.strip()] = 1
+                    bar.update()
+
+            dummy.columns = [col + '_' + str(name) for name in dummy.columns]
+            dummies.append(dummy)
+            del df[col]
 
         return pd.concat([df] + dummies, axis=1)
 
@@ -69,9 +77,11 @@ def _get_all_attrs(train, validation, test, out_path=None):
     add(dataloader(validation).df)
     add(dataloader(test, test=True).df)
 
+    attrs = {k: map(str, v) for k, v in attrs.items()}
+
     if out_path is not None:
         with open(out_path, 'w') as f:
-            json.dump({k: list(v) for k, v in attrs.items()}, f)
+            json.dump(attrs, f)
 
     return attrs
 
@@ -196,3 +206,5 @@ if __name__ == '__main__':
     train = '../data/train.csv'
     validation = '../data/validation.csv'
     test = '../data/test.csv'
+
+    gen_feature_data(train, validation, test)

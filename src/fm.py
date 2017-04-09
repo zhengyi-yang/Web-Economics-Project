@@ -20,7 +20,7 @@ LIBFM_PATH = os.path.abspath('../libfm')
 LIBFFM_PATH = os.path.abspath('../libffm')
 
 
-def gen_libfm_data(train_path, validation_path, test_path, libffm=False):
+def gen_libfm_data(train_path, validation_path, test_path, libffm=True):
     with tqdm(total=6) as pbar:
 
         train = utils.dataloader(train_path)
