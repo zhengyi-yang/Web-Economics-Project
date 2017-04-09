@@ -24,24 +24,27 @@ def gen_data(train_path, validation_path, test_path):
     attrs = _get_all_attrs(train_path, validation_path, test_path)
 
     expand_feartures(dataloader(train_path).df,
-                     attrs).to_csv(train_path + 'data')
-    expand_feartures(dataloader(validation_path).df,
-                     attrs).to_csv(train_path + 'data')
+    attrs).to_csv(train_path + '.data')
+        expand_feartures(dataloader(validation_path).df,
+                     attrs).to_csv(train_path + '.data')
     expand_feartures(dataloader(test_path, test=True).df,
-                     attrs).to_csv(train_path + 'data')
+                     attrs).to_csv(train_path + '.data')
 
 
 def expand_feartures(df, attrs_dict):
     dummies = []
-    for col in tqdm(cols):
-        dummy = pd.DataFrame(0, index=df.index, columns=attrs_dict[col])
-        for idx, value in df[col].iteritems():
-            if col != 'usertag':
-                dummy.loc[idx, value] = 1
-            else:
-                if value != 'null':
-                    for tag in value.split(','):
-                        dummy.loc[idx, tag] = 1
+    
+    with tqdm(total=len(df.index)*len(cols)) as bar:
+        for col in cols:
+            dummy = pd.DataFrame(0, index=df.index, columns=attrs_dict[col])
+            for idx, value in df[col].iteritems():
+                if col != 'usertag':
+                    dummy.loc[idx, value] = 1
+                else:
+                    if value != 'null':
+                        for tag in value.split(','):
+                            dummy.loc[idx, tag] = 1
+                bar.update()
         dummy.columns = [col + '_' + str(col) for col in dummy.columns]
         dummies.append(dummy)
         del df[col]
