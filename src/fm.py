@@ -7,10 +7,11 @@ Created on Mon Apr  3 18:26:13 2017
 """
 import os
 import sys
-from tempfile import mkdtemp
+from tempfile import mkstemp
 from subprocess import Popen, PIPE
 
 import numpy as np
+from sklearn.metrics import log_loss
 from tqdm import tqdm
 
 import utils
@@ -18,8 +19,7 @@ import utils
 LIBFM_PATH = os.path.abspath('../libfm')
 
 
-def libfm_data_gen(train_path, validation_path, test_path,libffm=False):
-    print 'Generating libFM/libFFM format data...'
+def gen_libfm_data(train_path, validation_path, test_path, libffm=False):
     with tqdm(total=6) as pbar:
 
         train = utils.dataloader(train_path, to_binary=True)
@@ -27,7 +27,7 @@ def libfm_data_gen(train_path, validation_path, test_path,libffm=False):
         train_libfm_path = train_path + '.libfm'
         train.dump_libfm(train_libfm_path)
         pbar.update()
-        if  libffm:
+        if libffm:
             to_libffm_format(train_libfm_path,
                              train.get_fields_dict())
         del train
@@ -36,7 +36,7 @@ def libfm_data_gen(train_path, validation_path, test_path,libffm=False):
         pbar.update()
         validation_libfm_path = validation_path + '.libfm'
         validation.dump_libfm(validation_libfm_path)
-        if  libffm:
+        if libffm:
             to_libffm_format(validation_libfm_path,
                              validation.get_fields_dict())
         pbar.update()
@@ -46,7 +46,7 @@ def libfm_data_gen(train_path, validation_path, test_path,libffm=False):
         pbar.update()
         test_libfm_path = test_path + '.libfm'
         test.dump_libfm(test_libfm_path)
-        if  libffm:
+        if libffm:
             to_libffm_format(test_libfm_path,
                              test.get_fields_dict())
         pbar.update()
@@ -87,8 +87,9 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
             "libFM can not be found at {} ".format(LIBFM_PATH))
 
     if out_path is None:
-        temp_dir = mkdtemp()
-        out_path = os.path.join(temp_dir, 'out.libfm')
+        out_path = mkstemp(suffix='.libfm')
+    else:
+        out_path = os.path.abspath(out_path)
 
     cmd = "{libfm} -task c -method sgda -train {train} -validation {validation} "\
           "-test {test} -iter {n_iter} -dim '1,1,{rank}' -learn_rate {learn_rate} "\
@@ -102,7 +103,7 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
     returncode = _run_with_output(cmd)
 
-    if returncode != 0:
+    if returncode != 0 or not os.path.exists(out_path):
         raise RuntimeError('Error occured with libFM')
 
     pCTR = np.loadtxt(out_path)
@@ -110,24 +111,9 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
     return pCTR
 
 
-def fm_strategy(train_path, validation_path, test_path, base_price, **kwargs):
-    train_libfm = train_path + '.libfm'
-    validation_libfm = validation_path + '.libfm'
-    test_libfm = test_path + '.libfm'
-
-    if not (os.path.exists(train_libfm) and
-            os.path.exists(validation_libfm) and
-            os.path.exists(test_libfm)):
-        train_libfm, validation_libfm, test_libfm = libfm_data_gen(
-            train_path, validation_path, test_path)
-
-    pCTR = fm_pCTR(train_libfm, validation_libfm, test_libfm, **kwargs)
-
-    CTR = utils.dataloader(train_path).metrics.CTR
-
-    bid_prices = base_price * pCTR / CTR
-
-    return bid_prices
+def get_log_loss(path, pCTR):
+    y = utils.dataloader(path).to_value()[1]
+    return log_loss(y_true=y, y_pred=pCTR)
 
 
 def _run_with_output(cmd):
@@ -145,11 +131,35 @@ def _run_with_output(cmd):
     return process.returncode
 
 
+def fm_strategy(train_path, validation_path, test_path, base_price, **kwargs):
+    train_libfm = train_path + '.libfm'
+    validation_libfm = validation_path + '.libfm'
+    test_libfm = test_path + '.libfm'
+
+    if not (os.path.exists(train_libfm) and
+            os.path.exists(validation_libfm) and
+            os.path.exists(test_libfm)):
+        train_libfm, validation_libfm, test_libfm = gen_libfm_data(
+            train_path, validation_path, test_path)
+
+    pCTR = fm_pCTR(train_libfm, validation_libfm, test_libfm, **kwargs)
+
+    CTR = utils.dataloader(train_path).metrics.CTR
+
+    bid_prices = base_price * pCTR / CTR
+
+    return bid_prices
+
+
 if __name__ == '__main__':
     train = '../data/train.csv'
     validation = '../data/validation.csv'
     test = '../data/test.csv'
 
+    train_libfm = '../data/train.csv.libfm'
+    validation_libfm = '../data/validation.csv.libfm'
+    test_libfm = '../data/test.csv.libfm'
+
     out = '../out/pCTR_FM.txt'
 
-    bid_prices = fm_strategy(train, validation, test, 200, out_path=out)
+#    bid_prices = fm_strategy(train, validation, test, 200, out_path=out)
