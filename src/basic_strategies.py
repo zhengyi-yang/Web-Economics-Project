@@ -68,7 +68,7 @@ if __name__ == '__main__':
     logistic_results = dict()
 
     print 'loading data...'
-    loader = utils.dataloader(data, to_binary=True)
+    loader = utils.dataloader(data)
 
     print 'start running...'
     for budget in budgets:

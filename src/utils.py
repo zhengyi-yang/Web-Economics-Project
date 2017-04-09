@@ -7,10 +7,70 @@ Created on Mon Mar 06 12:39:08 2017
 from __future__ import division
 import os
 import json
+from collections import defaultdict
+from tqdm import tqdm
 
 import pandas as pd
 import numpy as np
 from sklearn.datasets import dump_svmlight_file
+
+# column names that will be expanded
+cols = ('useragent', 'region', 'advertiser', 'city', 'slotvisibility',
+        'adexchange', 'slotformat', 'usertag')
+
+
+def gen_data(train_path, validation_path, test_path):
+
+    attrs = _get_all_attrs(train_path, validation_path, test_path)
+
+    expand_feartures(dataloader(train_path).df,
+                     attrs).to_csv(train_path + 'data')
+    expand_feartures(dataloader(validation_path).df,
+                     attrs).to_csv(train_path + 'data')
+    expand_feartures(dataloader(test_path, test=True).df,
+                     attrs).to_csv(train_path + 'data')
+
+
+def expand_feartures(df, attrs_dict):
+    dummies = []
+    for col in tqdm(cols):
+        dummy = pd.DataFrame(0, index=df.index, columns=attrs_dict[col])
+        for idx, value in df[col].iteritems():
+            if col != 'usertag':
+                dummy.loc[idx, value] = 1
+            else:
+                if value != 'null':
+                    for tag in value.split(','):
+                        dummy.loc[idx, tag] = 1
+        dummy.columns = [col + '_' + str(col) for col in dummy.columns]
+        dummies.append(dummy)
+        del df[col]
+
+        return pd.concat([df] + dummies, axis=1)
+
+
+def _get_all_attrs(train, validation, test, out_path=None):
+
+    attrs = defaultdict(set)
+
+    def add(df):
+        for col in cols:
+            if col != 'usertag':
+                attrs[col] = set.union(attrs[col], set(df[col].unique()))
+            else:
+                df.usertags = df.usertag.apply(
+                    lambda x: set(x.split(',')) if x != 'null' else set())
+                attrs['usertag'] = reduce(set.union, df.usertags)
+
+    add(dataloader(train).df)
+    add(dataloader(validation).df)
+    add(dataloader(test, test=True).df)
+
+    if out_path is not None:
+        with open(out_path, 'w') as f:
+            json.dump({k: list(v) for k, v in attrs.items()}, f)
+
+    return attrs
 
 
 def get_successful_bid(dataloader, bidprice, budget):
@@ -47,7 +107,8 @@ def to_csv(json_path):
 
 class dataloader(object):
 
-    def __init__(self, path, to_binary=False, test=False):
+    def __init__(self, path, test=False):
+
         df = pd.read_csv(path)
         self.test = test
         self.path = os.path.abspath(path)
@@ -58,32 +119,6 @@ class dataloader(object):
         else:
             self.df = df
             self.metrics = None
-
-        if to_binary:
-            self._to_binary()
-
-    def _to_binary(self):
-        cols = ('useragent', 'region', 'advertiser', 'city', 'slotvisibility',
-                'logtype', 'adexchange', 'slotformat')
-        dummies = []
-        for name in cols:
-            dummy = pd.get_dummies(self.df[name], prefix=name)
-            del self.df[name]
-            dummies.append(dummy)
-
-        self.df.usertags = self.df.usertag.apply(
-            lambda x: set(x.split(',')) if x != 'null' else set())
-
-        tags = reduce(set.union, self.df.usertags)
-        dummy = pd.DataFrame(0, index=self.df.index, columns=tags)
-        for idx, usertag in self.df.usertags.iteritems():
-            dummy.loc[idx, usertag] = 1
-
-        del self.df.usertags
-        dummy.columns = ['usertags_' + str(col) for col in dummy.columns]
-        dummies.append(dummy)
-
-        self.df = pd.concat([self.df] + dummies, axis=1)
 
     def _get_numeric_data(self):
         if not self.test:
@@ -152,3 +187,9 @@ class metrics(object):
         return {'impressions': self.impressions,
                 'clicks': self.clicks, 'cost': self.cost,
                 'CTR': self.CTR, 'CPM': self.CPM, 'CPC': self.CPC}
+
+
+if __name__ == '__main__':
+    train = '../data/train.csv'
+    validation = '../data/validation.csv'
+    test = '../data/test.csv'

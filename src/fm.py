@@ -23,7 +23,7 @@ LIBFFM_PATH = os.path.abspath('../libffm')
 def gen_libfm_data(train_path, validation_path, test_path, libffm=False):
     with tqdm(total=6) as pbar:
 
-        train = utils.dataloader(train_path, to_binary=True)
+        train = utils.dataloader(train_path)
         pbar.update()
         train_libfm_path = train_path + '.libfm'
         train.dump_libfm(train_libfm_path)
@@ -33,7 +33,7 @@ def gen_libfm_data(train_path, validation_path, test_path, libffm=False):
                              train.get_fields_dict())
         del train
 
-        validation = utils.dataloader(validation_path, to_binary=True)
+        validation = utils.dataloader(validation_path)
         pbar.update()
         validation_libfm_path = validation_path + '.libfm'
         validation.dump_libfm(validation_libfm_path)
@@ -43,7 +43,7 @@ def gen_libfm_data(train_path, validation_path, test_path, libffm=False):
         pbar.update()
         del validation
 
-        test = utils.dataloader(test_path, test=True, to_binary=True)
+        test = utils.dataloader(test_path, test=True)
         pbar.update()
         test_libfm_path = test_path + '.libfm'
         test.dump_libfm(test_libfm_path)
