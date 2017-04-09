@@ -8,26 +8,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def to_csv(json_path):
-    if os.path.isfile(json_path):
-        json_paths = [json_path]
-    elif os.path.isdir(json_path):
-        json_paths = [os.path.join(json_path, filename)
-                      for filename in os.listdir(json_path)]
-
-    for json_path in json_paths:
-        path, ext = os.path.splitext(json_path)
-        if ext != '.json':
-            continue
-        with open(json_path, 'r') as f:
-            data = json.load(f)
-        df = pd.DataFrame(data)
-        df = df.T
-        df.index = map(int, df.index)
-        df.sort_index(inplace=True)
-        df.to_csv(path + '.csv')
-
-
 def produce_table(file_name, vis):
     """Produce tables of results for constant and random bidding strategies."""
     path_to_json = os.path.join('..', 'out', file_name)

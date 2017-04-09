@@ -6,6 +6,7 @@ Created on Mon Mar 06 12:39:08 2017
 """
 from __future__ import division
 import os
+import json
 
 import pandas as pd
 import numpy as np
@@ -22,6 +23,26 @@ def get_successful_bid(dataloader, bidprice, budget):
     df = df[df.spend <= budget]
 
     return df.drop(['spend'], axis=1)
+
+
+def to_csv(json_path):
+    if os.path.isfile(json_path):
+        json_paths = [json_path]
+    elif os.path.isdir(json_path):
+        json_paths = [os.path.join(json_path, filename)
+                      for filename in os.listdir(json_path)]
+
+    for json_path in json_paths:
+        path, ext = os.path.splitext(json_path)
+        if ext != '.json':
+            continue
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+        df = pd.DataFrame(data)
+        df = df.T
+        df.index = map(int, df.index)
+        df.sort_index(inplace=True)
+        df.to_csv(path + '.csv')
 
 
 class dataloader(object):
