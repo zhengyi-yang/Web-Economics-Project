@@ -1,0 +1,3 @@
+[submodule "libfm"]
+	path = libfm
+	url = https://github.com/srendle/libfm.git

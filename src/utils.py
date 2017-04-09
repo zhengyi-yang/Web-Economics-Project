@@ -5,9 +5,11 @@ Created on Mon Mar 06 12:39:08 2017
 @author: Zhengyi
 """
 from __future__ import division
+import os
 
 import pandas as pd
-from scipy.sparse import csc_matrix
+import numpy as np
+from sklearn.datasets import dump_svmlight_file
 
 
 def get_successful_bid(dataloader, bidprice, budget):
@@ -24,17 +26,24 @@ def get_successful_bid(dataloader, bidprice, budget):
 
 class dataloader(object):
 
-    def __init__(self, path, to_binary=False):
+    def __init__(self, path, to_binary=False, test=False):
         df = pd.read_csv(path)
-        if 'bidprice' in df.columns and 'payprice' in df.columns:
-            df = df[df.bidprice > df.payprice]
-        self.df = df
-        self.metrics = metrics(self.df)
+        self.test = test
+        self.path = os.path.abspath(path)
+
+        if not test:
+            self.df = df[df.bidprice > df.payprice]
+            self.metrics = metrics(self.df)
+        else:
+            self.df = df
+            self.metrics = None
+
         if to_binary:
             self._to_binary()
 
     def _to_binary(self):
-        cols = ['useragent', 'region', 'advertiser', 'city', 'slotvisibility']
+        cols = ('useragent', 'region', 'advertiser', 'city', 'slotvisibility',
+                'logtype', 'adexchange', 'slotformat')
         dummies = []
         for name in cols:
             dummy = pd.get_dummies(self.df[name], prefix=name)
@@ -55,21 +64,52 @@ class dataloader(object):
 
         self.df = pd.concat([self.df] + dummies, axis=1)
 
-    def to_value(self, sparse=False, classes=[0, 1]):
-        y = self.df.click.values
-        X = self.df.drop(['click', 'bidprice', 'payprice'],
-                         axis=1)._get_numeric_data().values
+    def _get_numeric_data(self):
+        if not self.test:
+            data = self.df.drop(['click', 'bidprice', 'payprice'],
+                                axis=1)._get_numeric_data()
+        else:
+            data = self.df._get_numeric_data()
 
-        if sparse:
-            X = csc_matrix(X)
-        if classes != [0, 1]:
-            classes.sort()
-            y[y == 0] = classes[0]
-            y[y == 1] = classes[1]
+        return data
+
+    def to_value(self):
+        X = self._get_numeric_data().values
+
+        if not self.test:
+            y = self.df.click.values
+        else:
+            y = np.zeros(len(self))
+
         return X, y
+
+    def dump_libfm(self, out_path):
+        X, y = self.to_value()
+        dump_svmlight_file(X, y, out_path)
+
+    def get_fields_dict(self):
+        '''
+        return a dict of <index>:<field id>
+        '''
+        cols = self._get_numeric_data().columns
+        fields = {}  # <field name>:<field id>
+        fields_dict = {}  # <index>:<field id>
+
+        for i, col_name in enumerate(cols):
+            field = col_name.split('_')[0]
+            if field not in fields:
+                fields[field] = len(fields)
+            fields_dict[i] = fields[field]
+        return fields_dict
 
     def __len__(self):
         return len(self.df.index)
+
+    def __repr__(self):
+        return 'utils.dataloader at {}'.format(self.path)
+
+    def __str__(self):
+        return repr(self)
 
 
 class metrics(object):
@@ -83,7 +123,7 @@ class metrics(object):
         self.CPM = df.bidprice.mean()
 
         if self.clicks == 0:
-            self.CPC = float('NaN')
+            self.CPC = np.nan
         else:
             self.CPC = self.cost / self.clicks
 
