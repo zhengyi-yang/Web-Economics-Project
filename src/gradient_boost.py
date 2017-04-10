@@ -12,7 +12,7 @@ from utils import dataloader
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.grid_search import GridSearchCV
-from sklearn import metrics
+from sklearn.metrics import log_loss, mean_squared_error, roc_auc_score
 import numpy as np
 import pandas as pd
 import os
@@ -60,6 +60,8 @@ def predict_bid_price(train, test, predictors, test_size=0.1, cv=True):
     X = train.df.drop(['click', 'bidprice', 'payprice'],
                       axis=1)._get_numeric_data().values
 
+    y = y[:95000]
+    X = X[:95000]
     # X = vt.fit_transform(X)
 
     size = len(X)
@@ -82,14 +84,19 @@ def predict_bid_price(train, test, predictors, test_size=0.1, cv=True):
         print('Optimal parameter values: %s' % (str(best_params)))
 
     # retrain classifier with best parameters
-    clf_2 = GradientBoostingClassifier(n_estimators=100,
-                                       **best_params).fit(X_train, y_train)
+    clf = GradientBoostingClassifier(n_estimators=100,
+                                     **best_params).fit(X_train, y_train)
 
-    print(clf_2.score(X_test, y_test))
+    y_pred = clf.predict(X_test)
+
+    auc_score = roc_auc_score(y_test, y_pred)
+    lloss = log_loss(y_test, y_pred)
+    rmse = mean_squared_error(y_test, y_pred)
+    print('AUC score: %f,\nLog loss: %f,\nRMSE: %f' % (auc_score, lloss, rmse))
 
     # use classifier to determine pCTR and bid_prices
     mdl = test.drop([], axis=1)._get_numeric_data().values
-    pctr = clf_2.predict_proba(mdl)[:, 1]     # predicted CTR
+    pctr = clf.predict_proba(mdl)[:, 1]     # predicted CTR
     avgctr = train.metrics.CTR     # calculate average CTR from training set
 
     bid_price = base_bids * np.mean(pctr) / avgctr     # bid price estimate
@@ -101,7 +108,7 @@ def tune_model(data, target):
     param_grid = {'learning_rate': [0.1, 0.08, 0.02],
                   'max_depth': [3, 4, 5],
                   'min_samples_leaf': [3, 5, 9, 13, 17, 21],
-                  'subsample': [0.2, 0.4, 0.5, 0.6, 0.7]
+                  'subsample': [0.4, 0.5, 0.6, 0.7]
                   }
     clf = GradientBoostingClassifier(n_estimators=10)
     gs_cv = GridSearchCV(clf, param_grid).fit(data, target)
@@ -119,6 +126,6 @@ if __name__ == '__main__':
     with open('../out/gbdt_results.csv', 'w+') as res:
         results.to_csv(res)
 
-    print('Predicted CTR: %d,\nTotal cost: %d,' % (np.mean(pctr),
+    print('Predicted CTR: %f,\nTotal cost: %d,' % (np.mean(pctr),
                                                    sum(results.bidprice.values))
-            )
+          )
