@@ -18,7 +18,6 @@ from sklearn.datasets import dump_svmlight_file
 cols = ('useragent', 'region', 'advertiser', 'city', 'slotvisibility',
         'adexchange', 'slotformat', 'usertag')
 
-
 def gen_feature_data(train_path, validation_path, test_path):
 
     attrs = _get_all_attrs(train_path, validation_path, test_path)
@@ -37,15 +36,15 @@ def expand_features(df, attrs_dict):
 
     with tqdm(total=df_len * len(cols)) as bar:
         for col in cols:
-            dummy = pd.DataFrame(0, index=df.index, columns=attrs_dict[col])
+            dummy = pd.DataFrame(0,index=df.index,columns=attrs_dict[col])
             if col != 'usertag':
                 temp = pd.get_dummies(df[col])
                 col_len = len(dummy.columns)
                 for column_name in dummy.columns:
                     if column_name in temp.columns:
                         dummy[column_name] = temp[column_name]
+                        del temp[column_name]
                     bar.update(df_len / col_len)
-                del temp
             else:
                 for idx, value in df['usertag'].iteritems():
                     if value != 'null':
@@ -89,8 +88,8 @@ def _get_all_attrs(train, validation, test, out_path=None):
 def get_successful_bid(dataloader, bidprice, budget):
     df = dataloader.df[['click', 'bidprice', 'payprice']]
     df.bidprice = bidprice
-    df = df[df.payprice < df.bidprice]
-    df.loc[:, 'spend'] = df.bidprice.cumsum()
+    df = df[df.payprice < df.bidprice].copy()
+    df['spend'] = df.bidprice.cumsum()
 
     budget *= 1000
     df = df[df.spend <= budget]
@@ -133,17 +132,20 @@ class dataloader(object):
             self.df = df
             self.metrics = None
 
-    def _get_numeric_data(self):
+    def _get_numeric_data(self, cols=None):
         if not self.test:
             data = self.df.drop(['click', 'bidprice', 'payprice'],
                                 axis=1)._get_numeric_data()
         else:
             data = self.df._get_numeric_data()
 
+        if cols is not None:
+            data = data[cols]
+
         return data
 
-    def to_value(self):
-        X = self._get_numeric_data().values
+    def to_value(self, cols=None):
+        X = self._get_numeric_data(cols).values
 
         if not self.test:
             y = self.df.click.values
@@ -152,15 +154,16 @@ class dataloader(object):
 
         return X, y
 
-    def dump_libfm(self, out_path):
-        X, y = self.to_value()
+    def dump_libfm(self, out_path,cols=None):
+        X, y = self.to_value(cols)
         dump_svmlight_file(X, y, out_path)
+        return out_path
 
-    def get_fields_dict(self):
+    def get_fields_dict(self,cols=None):
         '''
         return a dict of <index>:<field id>
         '''
-        cols = self._get_numeric_data().columns
+        cols = self._get_numeric_data(cols).columns
         fields = {}  # <field name>:<field id>
         fields_dict = {}  # <index>:<field id>
 
@@ -206,5 +209,8 @@ if __name__ == '__main__':
     train = '../data/train.csv'
     validation = '../data/validation.csv'
     test = '../data/test.csv'
+    
+    with open('../data/attrs.json') as f:
+        r=json.load(f)
 
-    gen_feature_data(train, validation, test)
+#    gen_feature_data(train, validation, test)
