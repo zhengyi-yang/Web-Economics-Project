@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
 
 import utils
+import ORTB
 
 
 logreg_cache = None
@@ -26,10 +27,10 @@ def rand_bid(dataloader, upper, budget):
     return utils.get_successful_bid(dataloader, bidprice, budget)
 
 
-def logistic_bid(dataloader, base_price, budget, cache=False):
+def logistic_bid(train_loader,test_loader, base_price, budget, cache=False):
     global logreg_cache
 
-    X_train, y_train = dataloader.to_value()
+    X_train, y_train = train_loader.to_value()
 
     if cache and logreg_cache is not None:
         logreg = logreg_cache
@@ -38,13 +39,13 @@ def logistic_bid(dataloader, base_price, budget, cache=False):
         logreg.fit(X_train, y_train)
         if cache:
             logreg_cache = logreg
+    
+    X_test=test_loader.to_value()[0]
+    
+    pCTR = logreg.predict_proba(X_test)[:, 1]
+    bidprice = ORTB.linear_price(pCTR,base_price)
 
-    CTR = dataloader.metrics.CTR
-
-    pCTR = logreg.predict_proba(X_train)[:, 1]
-    bidprice = base_price * pCTR / CTR
-
-    return utils.get_successful_bid(dataloader, bidprice, budget)
+    return utils.get_successful_bid(test_loader, bidprice, budget)
 
 
 if __name__ == '__main__':
