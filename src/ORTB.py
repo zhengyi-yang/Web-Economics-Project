@@ -11,6 +11,13 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
+TRAIN_CTR = 0.0007444460603546209
+
+
+def linear_price(pCTR, base_price, CTR=TRAIN_CTR):
+    return base_price * pCTR / CTR
+
+
 def ORTB1(pCTR, lambda_, c=40):
     return np.sqrt(c / lambda_ * pCTR + c * c) - c
 
