@@ -75,7 +75,7 @@ def to_libffm_format(libfm_data_path, fields_dict):
 
 def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
             n_iter=10, rank=8, learn_rate=1e-7, init_stdev=0.1, seed=1,
-            out_path=None, save_model=None):
+            out_path=None):
     train = os.path.abspath(train_libfm_path)
     validation = os.path.abspath(validation_libfm_path)
     test = os.path.abspath(test_libfm_path)
@@ -101,9 +101,6 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
     cmd = cmd.format(libfm=libfm, train=train, validation=validation, test=test,
                      n_iter=n_iter, rank=rank, learn_rate=learn_rate,
                      init_stdev=init_stdev, seed=seed, out=out_path)
-
-    if save_model is not None:
-        cmd += " -save_model {save_model}".format(save_model=save_model)
 
     print 'Running:\n {} \n'.format(cmd)
 
@@ -253,8 +250,7 @@ if __name__ == '__main__':
 #
 #        clicks.append(click)
 
+    y = utils.dataloader(validation).to_value()[1]
+# FM log_loss 0.011067385922948474, n = 10 rank = 8
 
-#    y = utils.dataloader(validation).to_value()[1]
-#FM log_loss 0.011067385922948474, n = 10 rank = 8 
-
-#LR log_loss 0.005187452967605111
+# LR log_loss 0.005187452967605111
