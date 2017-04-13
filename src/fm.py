@@ -11,10 +11,11 @@ from tempfile import mkstemp
 from subprocess import Popen, PIPE
 
 import numpy as np
-from sklearn.metrics import log_loss
+from sklearn.metrics import log_loss, roc_auc_score
 from tqdm import tqdm
 
 import utils
+import ORTB
 
 LIBFM_PATH = os.path.abspath('../libfm')
 LIBFFM_PATH = os.path.abspath('../libffm')
@@ -73,7 +74,8 @@ def to_libffm_format(libfm_data_path, fields_dict):
 
 
 def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
-            n_iter=10, rank=8, learn_rate=1e-7, init_stdev=0.1, out_path=None):
+            n_iter=10, rank=8, learn_rate=1e-7, init_stdev=0.1, seed=1,
+            out_path=None, save_model=None):
     train = os.path.abspath(train_libfm_path)
     validation = os.path.abspath(validation_libfm_path)
     test = os.path.abspath(test_libfm_path)
@@ -94,11 +96,14 @@ def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
     cmd = "{libfm} -task c -method sgda -train {train} -validation {validation} "\
           "-test {test} -iter {n_iter} -dim '1,1,{rank}' -learn_rate {learn_rate} "\
-          "-init_stdev {init_stdev} -out {out}"
+          "-init_stdev {init_stdev} -seed {seed} -out {out}"
 
     cmd = cmd.format(libfm=libfm, train=train, validation=validation, test=test,
                      n_iter=n_iter, rank=rank, learn_rate=learn_rate,
-                     init_stdev=init_stdev, out=out_path)
+                     init_stdev=init_stdev, seed=seed, out=out_path)
+
+    if save_model is not None:
+        cmd += " -save_model {save_model}".format(save_model=save_model)
 
     print 'Running:\n {} \n'.format(cmd)
 
@@ -131,7 +136,7 @@ def ffm_train(train_libffm_path, validation_libffm_path,
     if _is_windows():
         libffm_train = os.path.join(LIBFFM_PATH, 'windows', 'ffm-train.exe')
     else:
-        libffm_train = os.path.join(LIBFFM_PATH, 'ffm-train.exe')
+        libffm_train = os.path.join(LIBFFM_PATH, 'ffm-train')
 
     if not os.path.exists(libffm_train):
         raise RuntimeError(
@@ -164,7 +169,7 @@ def ffm_pred(test_libffm_path, model_path, out_path=None):
     if _is_windows():
         libffm_pred = os.path.join(LIBFFM_PATH, 'windows', 'ffm-predict.exe')
     else:
-        libffm_pred = os.path.join(LIBFFM_PATH, 'ffm-predict.exe')
+        libffm_pred = os.path.join(LIBFFM_PATH, 'ffm-predict')
 
     if not os.path.exists(libffm_pred):
         raise RuntimeError(
@@ -216,39 +221,40 @@ def _run_with_output(cmd):
     return process.returncode
 
 
-def fm_strategy(train_path, validation_path, test_path, base_price, **kwargs):
-    train_libfm = train_path + '.libfm'
-    validation_libfm = validation_path + '.libfm'
-    test_libfm = test_path + '.libfm'
-
-    if not (os.path.exists(train_libfm) and
-            os.path.exists(validation_libfm) and
-            os.path.exists(test_libfm)):
-        train_libfm, validation_libfm, test_libfm = gen_libfm_data(
-            train_path, validation_path, test_path)
-
-    pCTR = fm_pCTR(train_libfm, validation_libfm, test_libfm, **kwargs)
-
-    CTR = utils.dataloader(train_path).metrics.CTR
-
-    bid_prices = base_price * pCTR / CTR
-
-    return bid_prices
-
-
 if __name__ == '__main__':
-    train = '../data/train.csv'
-    validation = '../data/validation.csv'
-    test = '../data/test.csv'
+    train = '../data/train.csv.data'
+    validation = '../data/validation.csv.data'
+    test = '../data/test.csv.data'
 
-    train_libfm = '../data/train.csv.libfm'
-    validation_libfm = '../data/validation.csv.libfm'
-    test_libfm = '../data/test.csv.libfm'
+    train_libfm = '../data/train.csv.data.libfm'
+    validation_libfm = '../data/validation.csv.data.libfm'
+    test_libfm = '../data/test.csv.data.libfm'
 
-    train_libffm = '../data/train.csv.libfm.libffm'
-    validation_libffm = '../data/validation.csv.libfm.libffm'
-    test_libffm = '../data/test.csv.libfm.libffm'
+    train_libffm = '../data/train.csv.data.libfm.libffm'
+    validation_libffm = '../data/validation.csv.data.libfm.libffm'
+    test_libffm = '../data/test.csv.data.libfm.libffm'
 
-    out = '../out/pCTR_FM.txt'
+#    out = '../out/pCTR_FM.txt'
+#
+#    fm = 'fm_pCTR.txt'
+#
+#    pCTR = np.loadtxt(fm)
+#
+#    bases = np.linspace(1e-7,1e-5,300)  # range(1,300)
+#    clicks = []
+#
+#    va = utils.dataloader(validation)
+#
+#    for base in tqdm(bases):
+#        #        bidprice=ORTB.linear_price(pCTR,base)
+#        bidprice = ORTB.ORTB2(pCTR, base)
+#        succe = utils.get_successful_bid(va, bidprice, 6250)
+#        click = utils.metrics(succe).clicks
+#
+#        clicks.append(click)
 
-#    bid_prices = fm_strategy(train, validation, test, 200, out_path=out)
+
+#    y = utils.dataloader(validation).to_value()[1]
+#FM log_loss 0.011067385922948474, n = 10 rank = 8 
+
+#LR log_loss 0.005187452967605111
