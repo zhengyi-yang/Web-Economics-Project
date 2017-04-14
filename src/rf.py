@@ -14,7 +14,7 @@ import utils
 def rf_pCTR(train_path, test_path):
 
     X_train, y_train = utils.dataloader(train_path).to_value()
-    X_test, _ = utils.dataloader(train_path).to_value()
+    X_test = utils.dataloader(test_path).to_value()[0]
 
     rf = RandomForestClassifier()
 
@@ -28,9 +28,6 @@ def rf_pCTR(train_path, test_path):
 def get_bidprice(pCTR, CTR, base_price):
     return base_price * pCTR / CTR
 
-#    CTR = utils.dataloader(train_path).metrics.CTR
-#    return bidprice # utils.get_successful_bid(dataloader, bidprice, budget)
-
 
 if __name__ == '__main__':
     import json
@@ -43,9 +40,9 @@ if __name__ == '__main__':
 
     pCTR = rf_pCTR(train, validation)
 
-    baseprices = range(1, 10)
+    baseprices = range(1, 300)
 
-    CTR = utils.dataloader(train).metrics.CTR
+    CTR = 0.0007444460603546209
 
     validation_loader = utils.dataloader(validation)
 
