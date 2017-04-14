@@ -23,11 +23,6 @@ def gradientboost_strategy(path_to_training, path_to_test, path_to_val):
     test_set = pd.read_csv(path_to_test)
     val_set = pd.read_csv(path_to_val)
 
-    # predictors for the model:
-    # predictors = ['weekday', 'hour', 'userid', 'useragent', 'IP', 'region',
-    #               'city', 'adexchange', 'slotid', 'slotwidth',
-    #               'slotheight', 'slotvisibility', 'slotformat', 'slotprice',
-    #               'creative', 'advertiser', 'usertag\n']
 
     bid_prices, pctr = predict_bid_price(training_set, test_set, val_set, cv=False)
     bidids = np.array(test_set.bidid.values)
@@ -43,43 +38,48 @@ def gradientboost_strategy(path_to_training, path_to_test, path_to_val):
 def predict_bid_price(train, test, val, predictors=[], test_size=0.1, cv=True):
     """Predict the bid price using gradient boost classifier."""
     size = len(train.df)
-    train.df = train.df.loc[np.random.choice(train.df.index, int(size // 100), replace=False)]
+    train.df = train.df.loc[np.random.choice(train.df.index, int(size // 150), replace=False)]
 
     y_train = train.df.click.values
-    X_train = train.df.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype'], axis=1)._get_numeric_data().values
+    X_train = train.df.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype', 'IP', 'userid'], axis=1)._get_numeric_data().values
 
     size_val = len(val)
-    y_test, y_val = val.click.values[:size_val//2], val.click.values[size_val//2:]
-    X_test, X_val = val.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype'],
-                             axis=1)._get_numeric_data().values[:size_val//2],\
-                    val.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype'],
-                             axis=1)._get_numeric_data().values[size_val//2:]
+    y_test = val.click.values
+    X_test = val.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype', 'IP', 'userid'],
+                             axis=1)._get_numeric_data().values
 
     # base bids is the bid price for the average CTR cases.
     prices = train.df.bidprice.values
-    base_bids = prices * 0.9 / prices.max(axis=0)
+    base_bids = prices * 0.4 / prices.max(axis=0)
 
     # select the best parameters
-    best_params = {'subsample': 0.8, 'n_estimators': 5, 'min_samples_leaf': 11}
+    best_params = {'subsample': 0.5, 'min_samples_leaf': 13, 'n_estimators': 10}
     if cv:
-        best_params = tune_model(X_val, y_val)
+        best_params = tune_model(X_test, y_test)
         print('Optimal parameter values: %s' % (str(best_params)))
+
 
     # retrain classifier with best parameters
     clf = GradientBoostingClassifier(learning_rate=0.1, max_depth=3, **best_params).fit(X_train, y_train)
+    y_predv = clf.predict(X_train)
+    auc_scorev = roc_auc_score(y_train, y_predv)
+    loglossv = log_loss(y_train, y_predv)
+    rmsev = mean_squared_error(y_train, y_predv)
+
     y_pred = clf.predict(X_test)
     auc_score = roc_auc_score(y_test, y_pred)
     logloss = log_loss(y_test, y_pred)
     rmse = mean_squared_error(y_test, y_pred)
 
-    print('AUC score: %f,\nLog loss: %f,\nRMSE: %f' % (auc_score, logloss, rmse))
-    headers = train.df.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype'],
+    print('Train Set:\n AUC score: %f,\nLog loss: %f,\nRMSE: %f' % (auc_scorev, loglossv, rmsev))
+    print('Test Set:\n AUC score: %f,\nLog loss: %f,\nRMSE: %f' % (auc_score, logloss, rmse))
+    headers = train.df.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype', 'IP', 'userid'],
                             axis=1).columns.values
     print('Most important features: \n%s' % str(dict(zip(headers,
                                                          clf.feature_importances_))))
 
     # use classifier to determine pCTR and bid_prices
-    mdl = test.drop(['bidid', 'logtype'], axis=1)._get_numeric_data().values
+    mdl = test.drop(['bidid', 'logtype', 'IP', 'userid'], axis=1)._get_numeric_data().values
 
     # predicted CTR
     pctr = clf.predict_proba(mdl)[:, 1]
@@ -87,14 +87,15 @@ def predict_bid_price(train, test, val, predictors=[], test_size=0.1, cv=True):
     avgctr = train.metrics.CTR
 
     bid_price = np.linalg.norm(base_bids) * pctr / avgctr  # bid price estimate
+    # bid_price = prices.mean() * pctr / avgctr
     return (bid_price, pctr)
 
 
 def tune_model(data, target):
     """Implement hyperparameter validation."""
-    param_grid = {'n_estimators': [5, 10, 15, 20],
-                  'min_samples_leaf': [10, 11, 12, 13, 14, 15, 17],
-                  'subsample': [0.5, 0.6, 0.7, 0.8, 1.0],
+    param_grid = {'n_estimators': [10, 20, 30],
+                  'min_samples_leaf': [9, 13, 17,],
+                  'subsample': [0.5, 0.75, 1.0],
                   }
     clf = GradientBoostingClassifier(n_estimators=2)
     gs_cv = GridSearchCV(clf, param_grid).fit(data, target)
