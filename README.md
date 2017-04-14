@@ -1,4 +1,4 @@
-# COMPGW02/M041: the Web Economics Project
+# COMPGW02/M041: the Web Economics Project - Group 27
 
 ## SUMMARY
 
@@ -75,17 +75,4 @@ Table 1: Fields in dataset
 2. [libFFM](https://www.csie.ntu.edu.tw/~cjlin/libffm/) by Yuchin Juan.
 
 3. Please run `pip install -r requirements.txt` to install other python dependencies.
-
-# REFERENCES
-
-- [Weinan Zhang, Shuai Yuan, Jun Wang, and Xuehua
-Shen. Real-time bidding benchmarking with ipinyou
-dataset. arXiv preprint arXiv:1407.7073, 2014.](https://arxiv.org/pdf/1407.7073.pdf)
-
-- [Weinan Zhang, Shuai Yuan, and Jun Wang. Optimal
-real-time bidding for display advertising. In Proceedings
-of the 20th ACM SIGKDD international conference on
-Knowledge discovery and data mining, pages 1077–1086.
-ACM, 2014.](http://wnzhang.net/papers/ortb-kdd.pdf)
-
 
