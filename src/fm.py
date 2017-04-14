@@ -74,7 +74,7 @@ def to_libffm_format(libfm_data_path, fields_dict):
 
 
 def fm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
-            n_iter=10, rank=8, learn_rate=1e-7, init_stdev=0.1, seed=1,
+            n_iter=60, rank=6, learn_rate=1e-7, init_stdev=0.1, seed=1,
             out_path=None):
     train = os.path.abspath(train_libfm_path)
     validation = os.path.abspath(validation_libfm_path)
@@ -125,8 +125,8 @@ def ffm_pCTR(train_libfm_path, validation_libfm_path, test_libfm_path,
 
 
 def ffm_train(train_libffm_path, validation_libffm_path,
-              reg=2e-5, factor=4, iteration=15, learn_rate=0.1, threads=1,
-              model_path=None):
+              reg=2e-5, factor=4, n_iter=15, learn_rate=0.1, threads=1,
+              auto_stop=True, model_path=None):
     train = os.path.abspath(train_libffm_path)
     validation = os.path.abspath(validation_libffm_path)
 
@@ -145,10 +145,17 @@ def ffm_train(train_libffm_path, validation_libffm_path,
         model_path = os.path.abspath(model_path)
 
     cmd = "{libffm} -l {reg} -k {factor} -t {iteration} -r {learn_rate} " \
-          "-s {threads} -p {validation} --auto-stop {train} {model} "
+          "-s {threads} -p {validation} {auto_stop} {train} {model} "
 
-    cmd = cmd.format(libffm=libffm_train, reg=reg, factor=factor, iteration=iteration, learn_rate=learn_rate, threads=threads,
-                     validation=validation, train=train, model=model_path)
+    if auto_stop:
+        stop = '--auto-stop'
+    else:
+        stop = ''
+
+    cmd = cmd.format(libffm=libffm_train, reg=reg, factor=factor, 
+                     iteration=n_iter, learn_rate=learn_rate, threads=threads,
+                     validation=validation, train=train, auto_stop=stop, 
+                     model=model_path)
 
     print 'Running:\n {} \n'.format(cmd)
 
@@ -218,19 +225,19 @@ def _run_with_output(cmd):
     return process.returncode
 
 
-if __name__ == '__main__':
-    train = '../data/train.csv.data'
-    validation = '../data/validation.csv.data'
-    test = '../data/test.csv.data'
-
-    train_libfm = '../data/train.csv.data.libfm'
-    validation_libfm = '../data/validation.csv.data.libfm'
-    test_libfm = '../data/test.csv.data.libfm'
-
-    train_libffm = '../data/train.csv.data.libfm.libffm'
-    validation_libffm = '../data/validation.csv.data.libfm.libffm'
-    test_libffm = '../data/test.csv.data.libfm.libffm'
-
+#if __name__ == '__main__':
+#    train = '../data/train.csv.data'
+#    validation = '../data/validation.csv.data'
+#    test = '../data/test.csv.data'
+#
+#    train_libfm = '../data/train.csv.data.libfm'
+#    validation_libfm = '../data/validation.csv.data.libfm'
+#    test_libfm = '../data/test.csv.data.libfm'
+#
+#    train_libffm = '../data/train.csv.data.libfm.libffm'
+#    validation_libffm = '../data/validation.csv.data.libfm.libffm'
+#    test_libffm = '../data/test.csv.data.libfm.libffm'
+#
 #    out = '../out/pCTR_FM.txt'
 #
 #    fm = 'fm_pCTR.txt'
@@ -249,8 +256,5 @@ if __name__ == '__main__':
 #        click = utils.metrics(succe).clicks
 #
 #        clicks.append(click)
-
-    y = utils.dataloader(validation).to_value()[1]
-# FM log_loss 0.011067385922948474, n = 10 rank = 8
-
-# LR log_loss 0.005187452967605111
+#
+#    y = utils.dataloader('../data/validation.csv').to_value()[1]

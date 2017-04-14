@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+with# -*- coding: utf-8 -*-
 """
 Created on Sun Apr 09 01:15:05 2017
 
@@ -18,11 +18,11 @@ def linear_price(pCTR, base_price, CTR=TRAIN_CTR):
     return base_price * pCTR / CTR
 
 
-def ORTB1(pCTR, lambda_, c=40):
+def ORTB1(pCTR, lambda_, c=40.490654563012058):
     return np.sqrt(c / lambda_ * pCTR + c * c) - c
 
 
-def ORTB2(pCTR, lambda_, c=60):
+def ORTB2(pCTR, lambda_, c=59.754632867436122):
     term = (pCTR + np.sqrt(c * c * lambda_ *
                            lambda_ + pCTR * pCTR)) / (c * lambda_)
 

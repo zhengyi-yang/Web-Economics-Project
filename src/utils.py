@@ -18,6 +18,7 @@ from sklearn.datasets import dump_svmlight_file
 cols = ('useragent', 'region', 'advertiser', 'city', 'slotvisibility',
         'adexchange', 'slotformat', 'usertag')
 
+
 def gen_feature_data(train_path, validation_path, test_path):
 
     attrs = _get_all_attrs(train_path, validation_path, test_path)
@@ -36,7 +37,7 @@ def expand_features(df, attrs_dict):
 
     with tqdm(total=df_len * len(cols)) as bar:
         for col in cols:
-            dummy = pd.DataFrame(0,index=df.index,columns=attrs_dict[col])
+            dummy = pd.DataFrame(0, index=df.index, columns=attrs_dict[col])
             if col != 'usertag':
                 temp = pd.get_dummies(df[col])
                 col_len = len(dummy.columns)
@@ -86,10 +87,10 @@ def _get_all_attrs(train, validation, test, out_path=None):
 
 
 def get_successful_bid(dataloader, bidprice, budget):
-    df = dataloader.df[['click', 'bidprice', 'payprice']]
+    df = dataloader.df[['click', 'bidprice', 'payprice']].copy()
     df.bidprice = bidprice
-    df = df[df.payprice < df.bidprice].copy()
-    df['spend'] = df.bidprice.cumsum()
+    df = df[df.payprice < df.bidprice]
+    df['spend'] = df.payprice.cumsum()
 
     budget *= 1000
     df = df[df.spend <= budget]
@@ -154,12 +155,12 @@ class dataloader(object):
 
         return X, y
 
-    def dump_libfm(self, out_path,cols=None):
+    def dump_libfm(self, out_path, cols=None):
         X, y = self.to_value(cols)
         dump_svmlight_file(X, y, out_path)
-        return out_path
+        return os.path.abspath(out_path)
 
-    def get_fields_dict(self,cols=None):
+    def get_fields_dict(self, cols=None):
         '''
         return a dict of <index>:<field id>
         '''
@@ -188,29 +189,43 @@ class metrics(object):
 
     def __init__(self, df):
         self.df = df
-        self.impressions = len(self.df)
+        self.impressions = len(self.df.index)
         self.clicks = len(self.df[self.df.click == 1])
-        self.cost = df.bidprice.sum() / 1000
+        self.cost = df.payprice.sum() / 1000
         self.CTR = self.df.click.mean()
-        self.CPM = df.bidprice.mean()
+        self.CPM = df.payprice.mean()
 
         if self.clicks == 0:
-            self.CPC = np.nan
+            self.eCPC = np.nan
         else:
-            self.CPC = self.cost / self.clicks
+            self.eCPC = self.cost / self.clicks
 
     def to_dict(self):
         return {'impressions': self.impressions,
                 'clicks': self.clicks, 'cost': self.cost,
-                'CTR': self.CTR, 'CPM': self.CPM, 'CPC': self.CPC}
+                'CTR': self.CTR, 'CPM': self.CPM, 'eCPC': self.eCPC}
 
 
 if __name__ == '__main__':
     train = '../data/train.csv'
     validation = '../data/validation.csv'
     test = '../data/test.csv'
+#
+#    tr = dataloader(train)
+#
+#    df = tr.df
+
+#    r = {}
+#    for adv in sorted(df.advertiser.unique()):
+#        df_adv = df[df.advertiser == adv]
+#        r[adv] = metrics(df_adv).to_dict()
+#        r[adv]['Bids'] = len(df_adv.index)
+#
+#    r['All'] = metrics(df).to_dict()
+#    r['All']['Bids'] = len(df.index)
     
-    with open('../data/attrs.json') as f:
-        r=json.load(f)
+
+#    with open('../data/attrs.json') as f:
+#        r = json.load(f)
 
 #    gen_feature_data(train, validation, test)
