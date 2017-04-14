@@ -38,7 +38,8 @@ def gradientboost_strategy(path_to_training, path_to_test, path_to_val):
 def predict_bid_price(train, test, val, predictors=[], test_size=0.1, cv=True):
     """Predict the bid price using gradient boost classifier."""
     size = len(train.df)
-    train.df = train.df.loc[np.random.choice(train.df.index, int(size // 150), replace=False)]
+    print(size)
+    train.df = train.df.loc[np.random.choice(train.df.index, int(size // 50), replace=False)]
 
     y_train = train.df.click.values
     X_train = train.df.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype', 'IP', 'userid'], axis=1)._get_numeric_data().values
@@ -46,7 +47,7 @@ def predict_bid_price(train, test, val, predictors=[], test_size=0.1, cv=True):
     size_val = len(val)
     y_test = val.click.values
     X_test = val.drop(['click', 'bidprice', 'payprice', 'bidid', 'logtype', 'IP', 'userid'],
-                             axis=1)._get_numeric_data().values
+                      axis=1)._get_numeric_data().values
 
     # base bids is the bid price for the average CTR cases.
     prices = train.df.bidprice.values
@@ -55,21 +56,24 @@ def predict_bid_price(train, test, val, predictors=[], test_size=0.1, cv=True):
     # select the best parameters
     best_params = {'subsample': 0.5, 'min_samples_leaf': 13, 'n_estimators': 10}
     if cv:
-        best_params = tune_model(X_test, y_test)
+        best_params = tune_model(X_train, y_train)
         print('Optimal parameter values: %s' % (str(best_params)))
 
+    # validation error
+    vclf = GradientBoostingClassifier(learning_rate=0.1, max_depth=3, **best_params).fit(X_test, y_test)
+    y_pred = vclf.predict_proba(X_test)[:, 1]
+    auc_score = roc_auc_score(y_test, y_pred)
+    logloss = log_loss(y_test, y_pred)
+    rmse = mean_squared_error(y_test, y_pred)
 
     # retrain classifier with best parameters
+    # then calculate the training error
     clf = GradientBoostingClassifier(learning_rate=0.1, max_depth=3, **best_params).fit(X_train, y_train)
-    y_predv = clf.predict(X_train)
+    y_predv = clf.predict_proba(X_train)[:, 1]
     auc_scorev = roc_auc_score(y_train, y_predv)
     loglossv = log_loss(y_train, y_predv)
     rmsev = mean_squared_error(y_train, y_predv)
 
-    y_pred = clf.predict(X_test)
-    auc_score = roc_auc_score(y_test, y_pred)
-    logloss = log_loss(y_test, y_pred)
-    rmse = mean_squared_error(y_test, y_pred)
 
     print('Train Set:\n AUC score: %f,\nLog loss: %f,\nRMSE: %f' % (auc_scorev, loglossv, rmsev))
     print('Test Set:\n AUC score: %f,\nLog loss: %f,\nRMSE: %f' % (auc_score, logloss, rmse))
@@ -121,8 +125,4 @@ if __name__ == '__main__':
     results, pctr, total = gradientboost_strategy(path_to_train, path_to_test, path_to_val)
 
     with open('../out/gbdt_results.csv', 'w+') as res:
-        results.to_csv(res)
-
-    print("""Predicted CTR: %f,\nNumber clicks: %d,\nTotal cost: %d CNY fen,"""
-          % (np.mean(pctr), sum(pctr), total)
-          )
+        results.to_csv(res, index=False)

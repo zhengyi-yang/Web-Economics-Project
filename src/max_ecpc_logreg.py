@@ -5,7 +5,8 @@ from utils import dataloader
 import pandas as pd
 import numpy as np
 
-""" Bidding below max eCPC (Mcpc). The goal of bid optimisation is to reduce the eCPC. In [12], given the advertiser's goal on max eCPC, which is the
+""" Bidding below max eCPC (Mcpc). The goal of bid optimisation is to reduce the eCPC.
+    In [12], given the advertiser's goal on max eCPC, which is the
     upper bound of expected cost per click, the bid price on an impression is obtained by multiplying the max eCPC and the pCTR. Here we calculate the
     max eCPC for each campaign by dividing its cost and achieved number of clicks in the training data. No parameter for this bidding strategy.
     - Zhang et al, 2015.
@@ -55,16 +56,16 @@ def get_maxecpc(training):
 
 
 def get_predicted_ctr(test, train):
-    """Get predicted CTR. Adaptation of bid.py by Zhengyi."""
     train_y = train.df.click.values
     train_x = train.df.drop(['click', 'bidprice', 'payprice'],
                             axis=1)._get_numeric_data().values
 
-    logreg = LogisticRegression().fit(train_x, train_y)
+    linreg = LogisticRegression().fit(train_x, train_y)
 
     test_x = test.df.drop([],
                           axis=1)._get_numeric_data().values
-    pctr = logreg.predict_proba(test_x)[:, 1]
+    pctr = linreg.predict_proba(test_x)[:, 1]
+    np.mean(pctr)
     return pctr
 
 
