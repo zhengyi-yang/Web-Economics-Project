@@ -25,34 +25,34 @@ def rf_pCTR(train_path, test_path):
     return pCTR
 
 
-def get_bidprice(pCTR, CTR, base_price):
-    return base_price * pCTR / CTR
-
-
-if __name__ == '__main__':
-    import json
-
-    results = {}
-
-    train = '../data/train.csv'
-    validation = '../data/validation.csv'
-    budget = 6250
-
-    pCTR = rf_pCTR(train, validation)
-
-    baseprices = range(1, 300)
-
-    CTR = 0.0007444460603546209
-
-    validation_loader = utils.dataloader(validation)
-
-    for base in baseprices:
-        bidprice = get_bidprice(pCTR, CTR, base)
-        result = utils.get_successful_bid(validation_loader, bidprice, budget)
-        results[str(base)] = utils.metrics(result).to_dict()
-        print base, results[str(base)]
-
-    with open('rf.json', 'w') as f:
-        json.dump(results, f)
-
-    utils.to_csv('rf.json')
+#def get_bidprice(pCTR, CTR, base_price):
+#    return base_price * pCTR / CTR
+#
+#
+#if __name__ == '__main__':
+#    import json
+#
+#    results = {}
+#
+#    train = '../data/train.csv'
+#    validation = '../data/validation.csv'
+#    budget = 6250
+#
+#    pCTR = rf_pCTR(train, validation)
+#
+#    baseprices = range(1, 300)
+#
+#    CTR = 0.0007444460603546209
+#
+#    validation_loader = utils.dataloader(validation)
+#
+#    for base in baseprices:
+#        bidprice = get_bidprice(pCTR, CTR, base)
+#        result = utils.get_successful_bid(validation_loader, bidprice, budget)
+#        results[str(base)] = utils.metrics(result).to_dict()
+#        print base, results[str(base)]
+#
+#    with open('rf.json', 'w') as f:
+#        json.dump(results, f)
+#
+#    utils.to_csv('rf.json')
