@@ -13,9 +13,6 @@ import utils
 import ORTB
 
 
-#pCTR_cache = None
-
-
 def const_bid(dataloader, price, budget):
     bidprice = np.full(len(dataloader), price, dtype=np.int64)
     return utils.get_successful_bid(dataloader, bidprice, budget)
@@ -26,26 +23,19 @@ def rand_bid(dataloader, upper, budget):
     return utils.get_successful_bid(dataloader, bidprice, budget)
 
 
-def logistic_bid(train_loader,test_loader, base_price, budget, cache=False):
-    global pCTR_cache
+def logistic_bid(train_loader, test_loader, base_price, budget):
+    X_train, y_train = train_loader.to_value()
+    X_test = test_loader.to_value()[0]
+    logreg = LogisticRegression()
+    logreg.fit(X_train, y_train)
+    pCTR = logreg.predict_proba(X_test)[:, 1]
 
-    if cache and pCTR_cache is not None:
-        pCTR=pCTR_cache
-    else:
-        X_train, y_train = train_loader.to_value()
-        X_test=test_loader.to_value()[0]
-        logreg = LogisticRegression()
-        logreg.fit(X_train, y_train)
-        pCTR = logreg.predict_proba(X_test)[:, 1]
-        if cache:
-            pCTR_cache=pCTR
-        
-    bidprice = ORTB.linear_price(pCTR,base_price)
+    bidprice = ORTB.linear_price(pCTR, base_price)
 
     return utils.get_successful_bid(test_loader, bidprice, budget)
 
 
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    import os
 #    import json
 #
@@ -54,7 +44,7 @@ def logistic_bid(train_loader,test_loader, base_price, budget, cache=False):
 #    data = os.path.join('..', 'data', 'validation.csv.data')
 #    out = os.path.join('..', 'out')
 #    xs = range(1, 300)
-#    
+#
 #    baseprice=25000
 #    budgets = [baseprice,baseprice/2,baseprice/4,baseprice/8]
 #
@@ -66,7 +56,7 @@ def logistic_bid(train_loader,test_loader, base_price, budget, cache=False):
 #    logistic_results = dict()
 #
 #    print 'loading data...'
-#    
+#
 #    loader = utils.dataloader(data)
 #    tr=utils.dataloader('../data/train.csv.data')
 #
@@ -86,7 +76,7 @@ def logistic_bid(train_loader,test_loader, base_price, budget, cache=False):
 #            json.dump(rand_results, f)
 #        with open(os.path.join(out, 'logistic_bid_%d.json' % budget), 'w') as f:
 #            json.dump(logistic_results, f)
-#            
+#
 #        utils.to_csv(out)
 #
 #    print 'finished.'
