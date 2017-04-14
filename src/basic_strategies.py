@@ -8,7 +8,6 @@ Created on Mon Mar 06 16:04:27 2017
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from tqdm import tqdm
 
 import utils
 import ORTB
@@ -49,6 +48,8 @@ def logistic_bid(train_loader,test_loader, base_price, budget, cache=False):
 #if __name__ == '__main__':
 #    import os
 #    import json
+#
+#    from tqdm import tqdm
 #
 #    data = os.path.join('..', 'data', 'validation.csv.data')
 #    out = os.path.join('..', 'out')
